@@ -3,6 +3,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import AddSectionForm from "@/components/admin/AddSectionForm";
 import { useParams } from "next/navigation";
+import TinyEditor from "@/components/admin/TinyEditor";
+
+export type ImageData = {
+    id: string;
+    url: string;
+    altText: string;
+}
 
 export type SectionData = {
     id: string;
@@ -10,6 +17,7 @@ export type SectionData = {
     content: string;
     order: number;
     children: SectionData[];
+    images: ImageData[];
 };
 
 export type PageData = {
@@ -46,6 +54,9 @@ function Section({ section, onUpdate }: { section: SectionData; onUpdate: () => 
   const [title, setTitle] = useState(section.title);
   const [content, setContent] = useState(section.content);
   const [order, setOrder] = useState(section.order);
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this section?')) return;
@@ -94,13 +105,51 @@ function Section({ section, onUpdate }: { section: SectionData; onUpdate: () => 
     }
   };
 
+  const handleImageUpload = async (e: React.FormEvent) => {
+    e.preventDefault(); // <-- Add this to prevent default form submission
+    if (!imageFile) {
+      setError('Please select a file first.');
+      return;
+    }
+
+    setIsUploading(true);
+    setError('');
+    
+    const formData = new FormData();
+    formData.append('file', imageFile);
+    formData.append('sectionId', section.id);
+
+    try {
+      const res = await fetch('/api/images/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to upload image');
+      }
+      
+      // Find the file input element and reset it
+      const fileInput = (e.target as HTMLFormElement).querySelector('input[type="file"]') as HTMLInputElement;
+      if(fileInput) fileInput.value = "";
+      
+      setImageFile(null); // Clear the file from state
+      onUpdate(); // Refresh the page to show the new image
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0 10px 20px' }}>
       
       {isEditing ? (
         <form onSubmit={handleUpdate}>
           <input value={title} onChange={e => setTitle(e.target.value)} style={{ display: 'block', width: '90%', marginBottom: '10px' }}/>
-          <textarea value={content} onChange={e => setContent(e.target.value)} style={{ display: 'block', width: '90%', minHeight: '80px', marginBottom: '10px' }}/>
+          <TinyEditor value={content} onEditorChange={setContent} />
           <input type="number" value={order} onChange={e => setOrder(parseInt(e.target.value))} />
           <button type="submit">Save</button>
           <button type="button" onClick={() => setIsEditing(false)}>Cancel</button>
@@ -112,6 +161,53 @@ function Section({ section, onUpdate }: { section: SectionData; onUpdate: () => 
           <p><small>Order: {section.order}</small></p>
         </div>
       )}
+
+      <div>
+        <strong>Images:</strong>
+        {section.images && section.images.length > 0 ? (
+          <div style={{ display: 'flex', gap: '10px', padding: '10px' }}>
+            {section.images.map(img => (
+              <div key={img.id}>
+                <img src={img.url} alt={img.altText} width="100" />
+                <button
+                  onClick={async () => {
+                    if (!confirm('Are you sure you want to delete this image?')) return;
+                    try {
+                      const res = await fetch(`/api/images/${img.id}`, { method: 'DELETE' });
+                      if (!res.ok) {
+                        const errorData = await res.json();
+                        throw new Error(errorData.error || 'Failed to delete');
+                      }
+                      onUpdate(); // Refresh the page
+                    } catch (err) {
+                      setError((err as Error).message);
+                    }
+                  }}
+                  style={{ marginTop: '5px', display: 'block', width: '100%' }}
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p>No images for this section.</p>
+        )}
+      </div>
+
+      <div style={{ marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+        <form onSubmit={handleImageUpload} style={{ marginTop: '10px', borderTop: '1-px solid #eee', paddingTop: '10px' }}>
+          <label>Upload New Image:</label>
+          <input 
+            type="file" 
+            onChange={(e) => e.target.files && setImageFile(e.target.files[0])}
+            accept="image/png, image/jpeg, image/gif" // Good practice to specify accepted file types
+          />
+          <button type="submit" disabled={!imageFile || isUploading}>
+            {isUploading ? 'Uploading...' : 'Upload Image'}
+          </button>
+        </form>
+      </div>
 
       <div style={{ marginTop: '10px' }}>
         <button onClick={() => setIsEditing(!isEditing)} disabled={isDeleting}>

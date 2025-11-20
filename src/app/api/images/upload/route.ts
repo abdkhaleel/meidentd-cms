@@ -1,69 +1,61 @@
-import { NextResponse } from 'next/server';
+// src/app/api/images/upload/route.ts
+
+import { NextRequest, NextResponse } from 'next/server'; // <-- Import NextRequest
 import { promises as fs } from 'fs';
 import path from 'path';
-import { IncomingForm } from 'formidable';
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '@/lib/prisma';
 
-// Important: We need to disable the default Next.js body parser for this route
-// because we are handling a stream of file data.
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+// No config object needed for App Router
 
-export async function POST(request: Request) {
-  // 1. Get the FormData from the request
-  const formData = await request.formData();
-
-  // 2. Get the file and the associated sectionId from the form data
-  const file = formData.get('file') as File | null;
-  const sectionId = formData.get('sectionId') as string | null;
-
-  if (!file) {
-    return NextResponse.json({ error: 'No file provided' }, { status: 400 });
-  }
-  if (!sectionId) {
-    return NextResponse.json({ error: 'Section ID is missing' }, { status: 400 });
-  }
-
-  // 3. Create the directory for uploads if it doesn't exist
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+export async function POST(request: NextRequest) { // <-- Use NextRequest instead of Request
   try {
-    await fs.access(uploadDir);
-  } catch (error) {
-    await fs.mkdir(uploadDir, { recursive: true });
-  }
+    // 1. Get the FormData from the request
+    const formData = await request.formData();
 
-  // 4. Generate a unique filename to prevent overwrites
-  const uniqueFilename = `${uuidv4()}${path.extname(file.name)}`;
-  const filePath = path.join(uploadDir, uniqueFilename);
+    // 2. Get the file and the associated sectionId from the form data
+    const file = formData.get('file') as File | null;
+    const sectionId = formData.get('sectionId') as string | null;
 
-  // 5. Save the file to the filesystem
-  try {
+    if (!file) {
+      console.error("Upload API Error: No file found in FormData.");
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
+    if (!sectionId) {
+      console.error("Upload API Error: No sectionId found in FormData.");
+      return NextResponse.json({ error: 'Section ID is missing' }, { status: 400 });
+    }
+
+    // 3. Create the directory for uploads if it doesn't exist
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    try {
+      await fs.mkdir(uploadDir, { recursive: true });
+    } catch (error) {
+      // This is fine if the directory already exists
+    }
+
+    // 4. Generate a unique filename to prevent overwrites
+    const uniqueFilename = `${uuidv4()}${path.extname(file.name)}`;
+    const filePath = path.join(uploadDir, uniqueFilename);
+
+    // 5. Save the file to the filesystem
     const buffer = Buffer.from(await file.arrayBuffer());
     await fs.writeFile(filePath, buffer);
-  } catch (error) {
-    console.error('Error saving file:', error);
-    return NextResponse.json({ error: 'Failed to save file' }, { status: 500 });
-  }
 
-  // 6. Create a record in the database
-  try {
+    // 6. Create a record in the database
     const newImage = await prisma.image.create({
       data: {
-        url: `/uploads/${uniqueFilename}`, // The public URL path
-        altText: file.name, // Use the original filename as a default alt text
-        order: 0, // You can make this more dynamic later
+        url: `/uploads/${uniqueFilename}`,
+        altText: file.name,
+        order: 0, 
         sectionId: sectionId,
       },
     });
+
     return NextResponse.json(newImage, { status: 201 });
+
   } catch (error) {
-    console.error('Error creating image record:', error);
-    // If DB write fails, try to clean up the saved file
-    await fs.unlink(filePath);
-    return NextResponse.json({ error: 'Failed to create image record in database' }, { status: 500 });
+    console.error('An unexpected error occurred in upload API:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

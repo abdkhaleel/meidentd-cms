@@ -3,6 +3,7 @@
 'use client';
 
 import { useState } from 'react';
+import TinyEditor from './TinyEditor';
 
 interface AddSectionFormProps {
   pageId: string;
@@ -66,13 +67,8 @@ export default function AddSectionForm({ pageId, onSectionAdded }: AddSectionFor
           />
         </div>
         <div style={{ marginTop: '1rem' }}>
-          <label>Content (HTML allowed)</label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            required
-            style={{ width: '100%', padding: '8px', minHeight: '100px' }}
-          />
+          <label>Content</label>
+          <TinyEditor value={content} onEditorChange={setContent} />
         </div>
         <div style={{ marginTop: '1rem' }}>
           <label>Order</label>
