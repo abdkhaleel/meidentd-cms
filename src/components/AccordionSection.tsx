@@ -10,6 +10,7 @@ export type ImageData = {
 };
 
 export type SectionData = {
+  order: any;
   id: string;
   title: string;
   content: string;

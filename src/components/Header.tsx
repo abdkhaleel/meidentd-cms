@@ -19,7 +19,7 @@ export default function Header() {
         
         {/* Logo Area */}
         <Link href="/" className="text-2xl font-bold text-gray-body tracking-tight hover:text-brand-primary transition-colors">
-          Meiden
+          MEIDEN
         </Link>
 
         {/* Navigation */}
@@ -28,9 +28,9 @@ export default function Header() {
             { name: 'Home', href: '/' },
             { name: 'About Us', href: '/about-us' },
             { name: 'Products', href: '/products' },
-            { name: 'Quality', href: '/quality' },
+            { name: 'Quality Policy', href: '/quality-policy' },
             { name: 'Contact', href: '/contact' },
-            { name: 'Careers', href: '/careers' },
+            { name: 'Careers', href: 'https://meidensha.zohorecruit.in/jobs/Careers' },
           ].map((link) => (
             <Link
               key={link.name}

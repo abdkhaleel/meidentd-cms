@@ -18,7 +18,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-100 bg-gray-50">
       
       {/* Top Navigation Bar */}
       <nav className="bg-brand-secondary text-white shadow-md">
@@ -83,20 +83,6 @@ export default function AdminDashboard() {
               View Pages &rarr;
             </Link>
           </div>
-
-          {/* Card 3: Add Section (Logic you already have) */}
-          {/* <div className="bg-white p-6 rounded-sm border border-gray-200 shadow-sm hover:shadow-md transition-shadow group">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-blue-50 text-brand-primary rounded-full group-hover:bg-brand-primary group-hover:text-white transition-colors">
-                <PlusCircle size={24} />
-              </div>
-            </div>
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Add Content</h3>
-            <p className="text-sm text-gray-500 mb-4">Create new sections or nested content blocks.</p>
-            <Link href="#" className="text-sm font-bold text-brand-primary hover:text-brand-deep flex items-center">
-              Create New &rarr;
-            </Link>
-          </div> */}
 
         </div>
       </main>

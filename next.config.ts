@@ -2,6 +2,7 @@
 
 const nextConfig = {
   /* config options here */
+  devIndicators: false,
   images: {
     domains: ['storage.googleapis.com'], // For production GCS
   },
