@@ -19,7 +19,6 @@
   --color-gray-hover: #f2f4f7;
 }
 
-/* Global Base Styles */
 @layer base {
   body {
     @apply bg-white text-gray-body font-sans antialiased;
