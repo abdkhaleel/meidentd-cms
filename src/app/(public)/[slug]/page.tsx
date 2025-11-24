@@ -2,16 +2,34 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { ChevronRight, ChevronDown, LayoutGrid, ImageIcon, Hash } from 'lucide-react';
 import ImageCarousel from '@/components/ImageCarousel';
-import type { SectionData } from '@/components/AccordionSection';
+import Image from 'next/image';
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-// --- UTILITY HELPER ---
+// --- UTILS ---
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+// --- TYPES ---
+// (Assuming these are consistent with your project)
+export type ImageData = {
+  id: string;
+  url: string;
+  altText: string;
+};
+
+export type SectionData = {
+  id: string;
+  title: string;
+  content: string;
+  order: number;
+  children: SectionData[];
+  images: ImageData[];
+};
 
 type PageData = {
   title: string;
@@ -19,88 +37,198 @@ type PageData = {
 };
 
 // ============================================================================
-// 1. RECURSIVE SECTION COMPONENT
-//    This handles the rendering of a section and all its nested children.
+// COMPONENT: LEVEL 2+ (DEEP NESTING) - ACCORDION STYLE
 // ============================================================================
-function RecursiveSection({ section, level }: { section: SectionData; level: number }) {
-  
-  // --- DYNAMIC STYLING BASED ON NESTING LEVEL ---
-  const isTopLevel = level === 0;
-  const isFirstChild = level === 1;
-  const isDeepChild = level > 1;
+function DeepNestedSection({ section }: { section: SectionData }) {
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className={cn(
-      "w-full",
-      // Add margin top for nested items to separate them
-      isFirstChild && "mt-10 bg-gray-50 p-6 rounded-sm border-l-4 border-brand-secondary shadow-sm",
-      isDeepChild && "mt-6 pl-6 border-l-2 border-gray-200",
-    )}>
-      
-      {/* A. SECTION HEADER */}
-      <div className="mb-4">
-        {isTopLevel ? (
-          // LEVEL 0: Big Header with Numbering (Handled in parent loop visually, but title here)
-          <h2 className="text-3xl font-bold text-brand-secondary mb-4">
-             {section.title}
-          </h2>
-        ) : (
-          // LEVEL 1+: Smaller Headers
-          <h3 className={cn(
-            "font-bold text-brand-primary",
-            isFirstChild ? "text-xl mb-3" : "text-lg mb-2 text-gray-700"
-          )}>
+    <div className="mt-4 border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-blue-50 transition-colors text-left"
+      >
+        <span className="font-bold text-brand-secondary text-sm md:text-base flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-primary"></span>
+          {section.title}
+        </span>
+        <ChevronDown 
+          size={18} 
+          className={cn("text-gray-400 transition-transform duration-300", isOpen && "rotate-180 text-brand-primary")} 
+        />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="p-5 border-t border-gray-100">
+              {/* Images in Accordion */}
+              {section.images?.length > 0 && (
+                <div className="mb-4">
+                   <ImageCarousel images={section.images} />
+                </div>
+              )}
+              
+              {/* Content */}
+              <div 
+                className="prose-brand prose-sm text-gray-600"
+                dangerouslySetInnerHTML={{ __html: section.content }}
+              />
+
+              {/* Infinite Recursion Handling */}
+              {section.children?.length > 0 && (
+                <div className="pl-4 mt-4 border-l-2 border-gray-100 space-y-2">
+                  {section.children.map(child => (
+                    <DeepNestedSection key={child.id} section={child} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ============================================================================
+// COMPONENT: LEVEL 1 (DIRECT CHILDREN) - ALTERNATING LAYOUT
+// ============================================================================
+function FeatureBlock({ section, index }: { section: SectionData; index: number }) {
+  const isEven = index % 2 === 0;
+  const hasImages = section.images && section.images.length > 0;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.6, delay: 0.1 }}
+      className="group relative py-12 md:py-20 border-b border-gray-100 last:border-0"
+    >
+      <div className={cn(
+        "flex flex-col gap-10",
+        // Desktop: Alternate layout if images exist
+        hasImages ? (isEven ? "lg:flex-row" : "lg:flex-row-reverse") : "lg:flex-col"
+      )}>
+        
+        {/* TEXT COLUMN */}
+        <div className={cn("flex-1", hasImages ? "lg:w-1/2" : "w-full")}>
+          <div className="flex items-center gap-2 mb-4 opacity-60">
+             <LayoutGrid size={16} className="text-brand-primary" />
+             <span className="text-xs font-bold tracking-widest text-brand-primary uppercase">Topic 0{index + 1}</span>
+          </div>
+          
+          <h3 className="text-2xl md:text-3xl font-bold text-brand-secondary mb-6 group-hover:text-brand-primary transition-colors">
             {section.title}
           </h3>
+          
+          <div 
+            className="prose-brand prose-lg text-gray-600 leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: section.content }}
+          />
+
+          {/* Render Level 2 Children as Accordions */}
+          {section.children && section.children.length > 0 && (
+            <div className="mt-8 space-y-3">
+              <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">In Detail</h4>
+              {section.children.map(child => (
+                <DeepNestedSection key={child.id} section={child} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* VISUAL COLUMN (Only if images exist) */}
+        {hasImages && (
+          <div className="lg:w-1/2 relative">
+             <div className={cn(
+               "relative rounded-xl overflow-hidden shadow-2xl border-4 border-white ring-1 ring-gray-100 bg-gray-100",
+               // Add a subtle tilt or offset for style
+               isEven ? "lg:rotate-1" : "lg:-rotate-1"
+             )}>
+               <ImageCarousel images={section.images} />
+             </div>
+             {/* Decorative Element */}
+             <div className={cn(
+               "absolute -bottom-6 -z-10 w-full h-full bg-brand-primary/5 rounded-xl",
+               isEven ? "-right-6" : "-left-6"
+             )}></div>
+          </div>
         )}
       </div>
+    </motion.div>
+  );
+}
 
-      {/* B. IMAGE CAROUSEL (Usually only for Level 0 or 1) */}
-      {section.images && section.images.length > 0 && (
-        <div className={cn(
-          "mb-6 rounded-sm overflow-hidden border border-gray-100",
-          isTopLevel ? "shadow-lg" : "shadow-sm"
-        )}>
-          <ImageCarousel images={section.images} />
+// ============================================================================
+// COMPONENT: LEVEL 0 (ROOT SECTION) - THE CHAPTER WRAPPER
+// ============================================================================
+function RootSection({ section, index }: { section: SectionData; index: number }) {
+  // Ref for scroll spy
+  const ref = useRef<HTMLDivElement>(null);
+
+  return (
+    <section 
+      id={section.id} 
+      ref={ref}
+      className="mb-24 scroll-mt-32"
+    >
+      {/* 1. STICKY HEADER FOR THE SECTION */}
+      <div className="sticky top-24 z-20 bg-white/90 backdrop-blur-md py-4 border-b border-brand-primary/10 mb-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center justify-center w-8 h-8 bg-brand-secondary text-white font-mono text-sm rounded-lg shadow-md">
+              {index + 1}
+            </span>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-brand-secondary tracking-tight">
+              {section.title}
+            </h2>
+          </div>
+          <div className="hidden md:block h-px flex-1 bg-gradient-to-r from-brand-primary/20 to-transparent ml-6"></div>
         </div>
-      )}
+      </div>
 
-      {/* C. RICH TEXT CONTENT */}
-      <div 
-        className={cn(
-          "prose-brand leading-relaxed text-gray-600",
-          isTopLevel ? "prose-lg" : "prose-sm", // Smaller text for nested items
-          
-          // --- FORCE TABLE STYLING (Applied at all levels) ---
-          "[&_table]:w-full [&_table]:border-collapse [&_table]:my-6 [&_table]:shadow-sm",
-          "[&_table]:border-t-[3px] [&_table]:border-brand-primary [&_table]:bg-white",
-          "[&_th]:bg-gray-100 [&_th]:text-brand-secondary [&_th]:font-bold [&_th]:uppercase",
-          "[&_th]:text-xs [&_th]:tracking-wider [&_th]:p-3 [&_th]:text-left [&_th]:border-b [&_th]:border-gray-200",
-          "[&_td]:p-3 [&_td]:text-sm [&_td]:border-b [&_td]:border-gray-100 [&_td]:align-top",
-          "[&_tr]:transition-colors [&_tr:hover]:bg-blue-50/30"
+      {/* 2. MAIN CONTENT OF ROOT SECTION */}
+      <div className="mb-12">
+        {section.images && section.images.length > 0 && (
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            className="mb-8 rounded-2xl overflow-hidden shadow-xl aspect-video relative"
+          >
+             <ImageCarousel images={section.images} />
+          </motion.div>
         )}
-        dangerouslySetInnerHTML={{ __html: section.content }}
-      />
+        
+        <div 
+          className="prose-brand prose-xl max-w-4xl text-gray-700 leading-loose"
+          dangerouslySetInnerHTML={{ __html: section.content }}
+        />
+      </div>
 
-      {/* D. RECURSIVE CHILDREN RENDERING */}
-      {section.children && section.children.length > 0 && (
-        <div className={cn(
-          "w-full",
-          // If Level 0, grid the children side-by-side (if logical), else stack them
-          isTopLevel ? "grid gap-6 md:grid-cols-1" : "flex flex-col"
-        )}>
-          {section.children.map((child) => (
-            <RecursiveSection key={child.id} section={child} level={level + 1} />
-          ))}
-        </div>
-      )}
-    </div>
+      {/* 3. RENDER CHILDREN (LEVEL 1) */}
+      <div className="pl-0 md:pl-4 border-l-2 border-dashed border-gray-200 space-y-8">
+        {section.children && section.children.map((child, idx) => (
+          <FeatureBlock key={child.id} section={child} index={idx} />
+        ))}
+      </div>
+
+    </section>
   );
 }
 
 
 // ============================================================================
-// 2. MAIN PAGE COMPONENT
+// MAIN PAGE COMPONENT
 // ============================================================================
 export default function DynamicPage() {
   const params = useParams();
@@ -110,6 +238,7 @@ export default function DynamicPage() {
   const [activeSectionId, setActiveSectionId] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
+  // Refs for scroll spy
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   useEffect(() => {
@@ -133,12 +262,13 @@ export default function DynamicPage() {
   // --- SCROLL SPY ---
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 150; 
+      const scrollPosition = window.scrollY + 200; // Adjusted offset
       let currentId = activeSectionId;
       
       if(page?.sections) {
         for (const section of page.sections) {
-          const element = sectionRefs.current[section.id];
+          // We assume the element ID matches the section ID
+          const element = document.getElementById(section.id);
           if (element) {
             const { offsetTop, offsetHeight } = element;
             if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
@@ -154,11 +284,10 @@ export default function DynamicPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [page, activeSectionId]);
 
-  // --- CLICK TO SCROLL ---
   const scrollToSection = (id: string) => {
-    const element = sectionRefs.current[id];
+    const element = document.getElementById(id);
     if (element) {
-      const yOffset = -100;
+      const yOffset = -140; 
       const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
@@ -166,104 +295,81 @@ export default function DynamicPage() {
 
   if (loading) return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center">
-      <div className="w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+      <div className="w-16 h-16 border-4 border-blue-100 border-t-brand-primary rounded-full animate-spin mb-4"></div>
+      <p className="text-gray-400 animate-pulse">Loading content...</p>
     </div>
   );
 
-  if (!page) return <div className="text-center py-20">Page not found.</div>;
+  if (!page) return <div className="text-center py-20 text-gray-500">Page not found.</div>;
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      
-      {/* Page Title */}
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mb-12 border-b border-gray-200 pb-6"
-      >
-        <h1 className="text-4xl md:text-5xl font-bold text-brand-primary tracking-tight">
-          {page.title}
-        </h1>
-      </motion.div>
+    <div className="bg-white min-h-screen">
+      {/* HEADER BANNER */}
+      <div className="bg-brand-secondary text-white py-16 md:py-24 relative overflow-hidden">
+         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+         <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-brand-primary/50 rounded-full blur-3xl"></div>
+         <div className="container mx-auto px-4 relative z-10">
+            <motion.h1 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="text-4xl md:text-6xl text-white font-bold tracking-tight mb-4"
+            >
+              {page.title}
+            </motion.h1>
+            <div className="h-1 w-20 bg-brand-bright rounded-full"></div>
+         </div>
+      </div>
 
-      <div className="flex flex-col lg:flex-row gap-12 relative">
+      <div className="container mx-auto px-4 py-12 flex flex-col lg:flex-row gap-16">
         
-        {/* --- SIDEBAR --- */}
-        <aside className="hidden lg:block w-1/4 shrink-0">
+        {/* --- LEFT SIDEBAR (STICKY) --- */}
+        <aside className="hidden lg:block w-64 shrink-0">
           <div className="sticky top-32">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-4">
-              On this page
-            </h3>
-            <nav className="relative">
-              <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gray-100 rounded-full" />
-              <ul className="space-y-1">
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 shadow-sm">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
+                <Hash size={12} /> On This Page
+              </h3>
+              <nav className="space-y-1 relative">
+                {/* Active Line Tracker */}
+                <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-gray-200 rounded-full" />
+                
                 {page.sections.map((section) => (
-                  <li key={section.id} className="relative">
-                    <button
-                      onClick={() => scrollToSection(section.id)}
-                      className={cn(
-                        "relative w-full text-left py-2 pl-6 pr-4 text-sm font-medium transition-colors duration-200 rounded-r-md",
-                        activeSectionId === section.id 
-                          ? "text-brand-primary font-bold bg-blue-50/50" 
-                          : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                      )}
-                    >
-                      {activeSectionId === section.id && (
-                        <motion.div
-                          layoutId="activeSectionIndicator"
-                          className="absolute left-0 top-0 bottom-0 w-[3px] bg-brand-primary rounded-full z-10"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        />
-                      )}
-                      {section.title}
-                    </button>
-                  </li>
+                  <button
+                    key={section.id}
+                    onClick={() => scrollToSection(section.id)}
+                    className={cn(
+                      "relative w-full text-left py-2 pl-6 pr-2 text-sm font-medium transition-all duration-300 rounded-md",
+                      activeSectionId === section.id 
+                        ? "text-brand-primary font-bold bg-white shadow-sm" 
+                        : "text-gray-500 hover:text-brand-secondary hover:pl-7"
+                    )}
+                  >
+                    {activeSectionId === section.id && (
+                      <motion.div
+                        layoutId="sidebar-indicator"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-brand-primary rounded-full ring-2 ring-blue-100"
+                      />
+                    )}
+                    {section.title}
+                  </button>
                 ))}
-              </ul>
-            </nav>
+              </nav>
+            </div>
           </div>
         </aside>
 
-        {/* --- MAIN CONTENT --- */}
-        <main className="w-full lg:w-3/4 space-y-24">
+        {/* --- RIGHT CONTENT --- */}
+        <main className="flex-1 min-w-0">
           {page.sections.map((section, index) => (
-            <motion.section
-              key={section.id}
-              id={section.id}
-              // The REF is crucial for the Scroll Spy to work
-              ref={(el) => { sectionRefs.current[section.id] = el; }} 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="scroll-mt-32"
-            >
-              
-              {/* 
-                DECORATIVE HEADER FOR TOP LEVEL 
-                (We only do this for the root level sections to keep them distinct)
-              */}
-              <div className="flex items-center gap-3 mb-6">
-                <span className="h-[2px] w-8 bg-brand-bright rounded-full"></span>
-                <span className="text-sm font-bold text-brand-bright uppercase tracking-wider">
-                  {section.order < 10 ? `0${section.order}` : section.order}
-                </span>
-              </div>
-
-              {/* 
-                RENDER THE SECTION RECURSIVELY 
-                Pass level={0} to start the style hierarchy
-              */}
-              <RecursiveSection section={section} level={0} />
-
-            </motion.section>
+            <RootSection key={section.id} section={section} index={index} />
           ))}
-
-          <div className="h-[20vh]"></div>
+          
+          {/* Footer Spacer */}
+          <div className="h-32 flex items-center justify-center text-gray-300 text-sm">
+             End of content
+          </div>
         </main>
+
       </div>
     </div>
   );
