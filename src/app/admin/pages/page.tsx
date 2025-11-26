@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Edit, Plus, Globe, Loader2, FileText } from 'lucide-react';
+import { Edit, Plus, Globe, Loader2, FileText, Trash2, AlertTriangle, X } from 'lucide-react';
 
 interface Page {
   id: string;
@@ -11,23 +11,99 @@ interface Page {
   slug: string;
 }
 
+// --- DELETE CONFIRMATION MODAL ---
+function DeleteModal({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  pageTitle, 
+  isDeleting 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onConfirm: () => void; 
+  pageTitle: string; 
+  isDeleting: boolean; 
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+        
+        {/* Modal Header */}
+        <div className="bg-red-50 px-6 py-4 border-b border-red-100 flex items-center gap-3">
+          <div className="p-2 bg-red-100 rounded-full text-red-600">
+            <AlertTriangle size={24} />
+          </div>
+          <h3 className="text-lg font-bold text-red-900">Delete Page?</h3>
+        </div>
+
+        {/* Modal Body */}
+        <div className="p-6">
+          <p className="text-gray-600 mb-4">
+            Are you sure you want to delete <strong>"{pageTitle}"</strong>?
+          </p>
+          <div className="bg-gray-50 p-3 rounded border border-gray-200 text-sm text-gray-500">
+            <p className="font-semibold text-gray-700 mb-1">This action will permanently delete:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>The page configuration</li>
+              <li>All sections and text content</li>
+              <li>All uploaded images associated with this page</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+          <button 
+            onClick={onClose}
+            disabled={isDeleting}
+            className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-md transition-colors font-medium"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center font-bold shadow-sm"
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="animate-spin mr-2" size={18} /> Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 size={18} className="mr-2" /> Yes, Delete Page
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- MAIN COMPONENT ---
 export default function ManagePages() {
   const [pages, setPages] = useState<Page[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const router = useRouter();
-
+  
   // Form State
   const [newTitle, setNewTitle] = useState('');
   const [newSlug, setNewSlug] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Delete State
+  const [pageToDelete, setPageToDelete] = useState<Page | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Fetch Pages
   const fetchPages = useCallback(async () => {
-    // Only set full loading on first load
     if (pages.length === 0) setLoading(true);
     try {
-      const res = await fetch('/api/pages');
+      const res = await fetch('/api/pages', { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to fetch pages');
       const data = await res.json();
       setPages(data);
@@ -60,20 +136,41 @@ export default function ManagePages() {
         throw new Error(errorData.error || 'Failed to create page');
       }
       
-      const newPage = await res.json();
-      
       // Reset and Refresh
       setNewTitle('');
       setNewSlug('');
       fetchPages();
-      
-      // Optional: Redirect to edit immediately
-      // router.push(`/admin/pages/edit/${newPage.slug}`);
 
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Delete Page Handler
+  const handleDeletePage = async () => {
+    if (!pageToDelete) return;
+    setIsDeleting(true);
+
+    try {
+      const res = await fetch(`/api/pages/${pageToDelete.slug}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const errData = await res.json(); // Try to get error message from server
+        throw new Error(errData.error || `Server returned ${res.status}`);
+      }
+
+      // Success: Remove from local state immediately
+      setPages((prev) => prev.filter((p) => p.id !== pageToDelete.id));
+      setPageToDelete(null); // Close modal
+
+    } catch (err) {
+      alert(`Error deleting page: ${(err as Error).message}`);
+    } finally {
+      setIsDeleting(false);
     }
   };
   
@@ -116,8 +213,6 @@ export default function ManagePages() {
         
         <div className="p-6">
           <form onSubmit={handleCreatePage} className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
-            
-            {/* Title Input */}
             <div className="md:col-span-5">
               <label className="block text-sm font-bold text-gray-700 mb-1">Page Title</label>
               <input
@@ -126,11 +221,9 @@ export default function ManagePages() {
                 onChange={(e) => setNewTitle(e.target.value)}
                 placeholder="e.g., Quality Policy"
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary outline-none transition-all"
+                className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-brand-primary/50 outline-none transition-all"
               />
             </div>
-
-            {/* Slug Input */}
             <div className="md:col-span-5">
               <label className="block text-sm font-bold text-gray-700 mb-1">URL Slug</label>
               <div className="relative flex items-center">
@@ -141,34 +234,21 @@ export default function ManagePages() {
                   onChange={(e) => setNewSlug(e.target.value)}
                   placeholder="quality-policy"
                   required
-                  className="w-full pl-6 pr-4 py-2 bg-gray-50 border border-gray-300 rounded focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary outline-none transition-all font-mono text-sm text-gray-600"
+                  className="w-full pl-6 pr-4 py-2 bg-gray-50 border border-gray-300 rounded focus:ring-2 focus:ring-brand-primary/50 outline-none transition-all font-mono text-sm text-gray-600"
                 />
               </div>
             </div>
-
-            {/* Submit Button */}
             <div className="md:col-span-2">
               <button 
                 type="submit" 
                 disabled={isSubmitting}
-                className={`
-                  w-full flex items-center justify-center py-2 px-4 rounded text-white font-bold shadow-sm transition-all
-                  ${isSubmitting 
-                    ? 'bg-brand-primary/70 cursor-not-allowed' 
-                    : 'bg-brand-primary hover:bg-brand-deep hover:shadow-md'
-                  }
-                `}
+                className={`w-full flex items-center justify-center py-2 px-4 rounded text-white font-bold shadow-sm transition-all ${isSubmitting ? 'bg-brand-primary/70' : 'bg-brand-primary hover:bg-brand-deep'}`}
               >
                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
               </button>
             </div>
           </form>
-          
-          {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded">
-              {error}
-            </div>
-          )}
+          {error && <div className="mt-4 p-3 bg-red-50 text-red-700 text-sm rounded">{error}</div>}
         </div>
       </div>
 
@@ -190,8 +270,6 @@ export default function ManagePages() {
             <tbody className="divide-y divide-gray-100">
               {pages.map((page) => (
                 <tr key={page.id} className="hover:bg-blue-50/50 transition-colors group">
-                  
-                  {/* Title Column */}
                   <td className="px-6 py-4">
                     <div className="flex items-center">
                       <div className="bg-blue-100 p-2 rounded-full mr-3 text-brand-primary">
@@ -200,32 +278,38 @@ export default function ManagePages() {
                       <span className="font-medium text-gray-900">{page.title}</span>
                     </div>
                   </td>
-
-                  {/* Slug Column */}
                   <td className="px-6 py-4">
                     <div className="flex items-center text-sm text-gray-500 font-mono">
                       <Globe size={14} className="mr-1 text-gray-400" />
                       /{page.slug}
                     </div>
                   </td>
-
-                  {/* Actions Column */}
                   <td className="px-6 py-4 text-right">
-                    <Link 
-                      href={`/admin/pages/edit/${page.slug}`}
-                      className="inline-flex items-center px-3 py-1.5 border border-brand-primary text-brand-primary text-sm font-medium rounded hover:bg-brand-primary hover:text-white transition-colors"
-                    >
-                      <Edit size={14} className="mr-1.5" />
-                      Edit Content
-                    </Link>
+                    <div className="flex justify-end items-center gap-2">
+                      <Link 
+                        href={`/admin/pages/edit/${page.slug}`}
+                        className="inline-flex items-center px-3 py-1.5 border border-brand-primary text-brand-primary text-sm font-medium rounded hover:bg-brand-primary hover:text-white transition-colors"
+                      >
+                        <Edit size={14} className="mr-1.5" />
+                        Edit Content
+                      </Link>
+                      
+                      {/* DELETE BUTTON */}
+                      <button
+                        onClick={() => setPageToDelete(page)}
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-gray-500 text-sm font-medium rounded hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                        title="Delete Page"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
-              
               {pages.length === 0 && (
                 <tr>
                   <td colSpan={3} className="px-6 py-12 text-center text-gray-400">
-                    No pages found. Create one above to get started.
+                    No pages found.
                   </td>
                 </tr>
               )}
@@ -233,6 +317,15 @@ export default function ManagePages() {
           </table>
         </div>
       </div>
+
+      {/* Delete Modal Instance */}
+      <DeleteModal 
+        isOpen={!!pageToDelete}
+        onClose={() => setPageToDelete(null)}
+        onConfirm={handleDeletePage}
+        pageTitle={pageToDelete?.title || ''}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }

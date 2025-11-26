@@ -22,7 +22,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { 
   Edit, Trash2, Plus, Image as ImageIcon, 
   Save, X, Upload, Loader2, GripVertical, 
-  MoreVertical, ChevronRight, Eye 
+  ChevronRight, AlertTriangle 
 } from 'lucide-react';
 
 import AddSectionForm from "@/components/admin/AddSectionForm";
@@ -50,7 +50,59 @@ export type PageData = {
   sections: SectionData[];
 };
 
-// --- MODAL COMPONENT (Generic Wrapper) ---
+// --- REUSABLE DELETE CONFIRMATION MODAL ---
+function DeleteConfirmModal({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  title, 
+  message, 
+  isDeleting 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onConfirm: () => void; 
+  title: string; 
+  message: React.ReactNode; 
+  isDeleting: boolean; 
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="bg-red-50 px-6 py-4 border-b border-red-100 flex items-center gap-3">
+          <div className="p-2 bg-red-100 rounded-full text-red-600">
+            <AlertTriangle size={24} />
+          </div>
+          <h3 className="text-lg font-bold text-red-900">{title}</h3>
+        </div>
+        <div className="p-6">
+          <div className="text-gray-600 mb-4">{message}</div>
+        </div>
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+          <button 
+            onClick={onClose}
+            disabled={isDeleting}
+            className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-md transition-colors font-medium"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center font-bold shadow-sm"
+          >
+            {isDeleting ? <Loader2 className="animate-spin mr-2" size={18} /> : <Trash2 size={18} className="mr-2" />}
+            Yes, Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- GENERIC MODAL WRAPPER ---
 function Modal({ title, onClose, children, maxWidth = "max-w-4xl" }: { title: string, onClose: () => void, children: React.ReactNode, maxWidth?: string }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -83,7 +135,7 @@ function EditSectionModal({ section, onClose, onUpdate }: { section: SectionData
       const res = await fetch(`/api/sections/${section.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, order: section.order }) // Order handled by DnD
+        body: JSON.stringify({ title, content, order: section.order })
       });
       if (!res.ok) throw new Error('Failed to update');
       onUpdate();
@@ -128,7 +180,10 @@ function EditSectionModal({ section, onClose, onUpdate }: { section: SectionData
 // --- IMAGE MANAGER MODAL ---
 function ImageManagerModal({ section, onClose, onUpdate }: { section: SectionData, onClose: () => void, onUpdate: () => void }) {
   const [uploading, setUploading] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  
+  // State for deleting
+  const [imageToDelete, setImageToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
@@ -148,16 +203,17 @@ function ImageManagerModal({ section, onClose, onUpdate }: { section: SectionDat
     }
   };
 
-  const handleDelete = async (imgId: string) => {
-    if (!confirm('Delete this image?')) return;
-    setDeletingId(imgId);
+  const executeDelete = async () => {
+    if (!imageToDelete) return;
+    setIsDeleting(true);
     try {
-      await fetch(`/api/images/${imgId}`, { method: 'DELETE' });
+      await fetch(`/api/images/${imageToDelete}`, { method: 'DELETE' });
       onUpdate();
+      setImageToDelete(null); // Close modal
     } catch (err) {
       alert('Failed to delete');
     } finally {
-      setDeletingId(null);
+      setIsDeleting(false);
     }
   };
 
@@ -185,17 +241,30 @@ function ImageManagerModal({ section, onClose, onUpdate }: { section: SectionDat
             <div key={img.id} className="relative group rounded-lg overflow-hidden border border-gray-200 aspect-video bg-gray-100">
               <img src={img.url} alt={img.altText} className="w-full h-full object-contain p-2" />
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                 {/* Trigger Delete Modal */}
                  <button 
-                   onClick={() => handleDelete(img.id)} 
-                   className="bg-red-600 text-white p-2 rounded-full hover:bg-red-700"
+                   onClick={() => setImageToDelete(img.id)} 
+                   className="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 shadow-sm"
                  >
-                   {deletingId === img.id ? <Loader2 className="animate-spin" size={18}/> : <Trash2 size={18} />}
+                   <Trash2 size={18} />
                  </button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Confirmation Modal for Image */}
+      <DeleteConfirmModal 
+        isOpen={!!imageToDelete}
+        onClose={() => setImageToDelete(null)}
+        onConfirm={executeDelete}
+        title="Delete Image?"
+        isDeleting={isDeleting}
+        message={
+          <p>Are you sure you want to delete this image? This action is permanent and cannot be undone.</p>
+        }
+      />
     </Modal>
   );
 }
@@ -205,6 +274,9 @@ function SortableSectionItem({ section, onUpdate, pageId, level }: { section: Se
   const [showEdit, setShowEdit] = useState(false);
   const [showImages, setShowImages] = useState(false);
   const [showAddChild, setShowAddChild] = useState(false);
+  
+  // Delete State
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // DnD Hook
@@ -223,20 +295,18 @@ function SortableSectionItem({ section, onUpdate, pageId, level }: { section: Se
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleDelete = async () => {
-    console.log("Called Delete Method");
-    // if (!confirm('Delete this section?')){ 
-    //   console.log("Delete aborted");
-    //   return;
-    // }
+  const executeDelete = async () => {
     setIsDeleting(true);
     try {
-
-      console.log("Called Delete API");
-      await fetch(`/api/sections/${section.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/sections/${section.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error("Failed to delete");
       onUpdate();
-    } catch (e) { alert('Error deleting'); }
-    finally { setIsDeleting(false); }
+      setShowDeleteConfirm(false);
+    } catch (e) { 
+        alert('Error deleting section'); 
+    } finally { 
+        setIsDeleting(false); 
+    }
   };
 
   return (
@@ -275,8 +345,10 @@ function SortableSectionItem({ section, onUpdate, pageId, level }: { section: Se
               <Plus size={18} />
             </button>
             <div className="w-px h-6 bg-gray-200 mx-2"></div>
-            <button onClick={handleDelete} disabled={isDeleting} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded">
-              {isDeleting ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
+            
+            {/* Delete Button Triggers Modal */}
+            <button onClick={() => setShowDeleteConfirm(true)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded">
+              <Trash2 size={18} />
             </button>
           </div>
         </div>
@@ -292,6 +364,27 @@ function SortableSectionItem({ section, onUpdate, pageId, level }: { section: Se
       {/* Modals */}
       {showEdit && <EditSectionModal section={section} onClose={() => setShowEdit(false)} onUpdate={onUpdate} />}
       {showImages && <ImageManagerModal section={section} onClose={() => setShowImages(false)} onUpdate={onUpdate} />}
+
+      {/* Delete Confirmation Modal for Section */}
+      <DeleteConfirmModal 
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={executeDelete}
+        title="Delete Section?"
+        isDeleting={isDeleting}
+        message={
+            <div>
+                <p className="mb-2">Are you sure you want to delete <strong>"{section.title}"</strong>?</p>
+                <div className="bg-red-50 p-3 rounded text-sm text-red-800 border border-red-100">
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li>This section and its content</li>
+                        <li><strong>{section.images.length}</strong> associated images</li>
+                        <li><strong>{section.children.length}</strong> nested sub-sections</li>
+                    </ul>
+                </div>
+            </div>
+        }
+      />
 
       {/* Recursive Children Sortable Context */}
       {section.children && section.children.length > 0 && (
@@ -310,7 +403,7 @@ function SortableList({ items, onUpdate, pageId, level = 0 }: { items: SectionDa
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // Optimistic UI: Sort items locally before sending to server to prevent jumpiness
+  // Optimistic UI
   const [sortedItems, setSortedItems] = useState(items);
   useEffect(() => { setSortedItems(items); }, [items]);
 
@@ -321,31 +414,24 @@ function SortableList({ items, onUpdate, pageId, level = 0 }: { items: SectionDa
       const oldIndex = sortedItems.findIndex((item) => item.id === active.id);
       const newIndex = sortedItems.findIndex((item) => item.id === over.id);
       
-      // 1. Update UI Immediately
       const newOrder = arrayMove(sortedItems, oldIndex, newIndex);
       setSortedItems(newOrder);
 
-      // 2. Send Update to API
-      // Note: In a real production app, you'd send a batch update. 
-      // Here we loop for simplicity or assume the backend handles re-indexing.
       try {
-        // Basic implementation: update the dragged item's order to the new index
-        // Better approach: Send the whole ID array to an endpoint like /api/sections/reorder
         await Promise.all(newOrder.map((item: { id: any; title: any; content: any; }, index: any) => 
           fetch(`/api/sections/${item.id}`, {
              method: 'PUT', 
              headers: {'Content-Type': 'application/json'},
-             body: JSON.stringify({ order: index, title: item.title, content: item.content }) // preserving other fields
+             body: JSON.stringify({ order: index, title: item.title, content: item.content })
           })
         ));
-        onUpdate(); // Refresh true state
+        onUpdate(); 
       } catch (e) {
         console.error("Reorder failed", e);
       }
     }
   };
 
-  // Sort by order before rendering
   const renderItems = [...sortedItems].sort((a, b) => a.order - b.order);
 
   return (
@@ -374,7 +460,7 @@ export default function PageEditor() {
 
   const fetchPageData = useCallback(async () => {
     try {
-      const res = await fetch(`/api/pages/${slug}`);
+      const res = await fetch(`/api/pages/${slug}`, { cache: 'no-store' });
       if (res.ok) setPage(await res.json());
     } catch (e) { console.error(e); } 
     finally { setLoading(false); }
@@ -394,12 +480,10 @@ export default function PageEditor() {
          <h1 className="text-3xl font-bold text-brand-secondary">Content Editor</h1>
       </div>
 
-      {/* The Sortable List */}
       <div className="space-y-6">
         <SortableList items={page.sections} onUpdate={fetchPageData} pageId={page.id} />
       </div>
 
-      {/* Add New Section at Bottom */}
       <div className="mt-12 pt-8 border-t-2 border-dashed border-gray-300 bg-gray-50/50 rounded-lg p-6">
          <h3 className="text-lg font-bold text-gray-400 mb-4 text-center uppercase tracking-widest">Add New Top Section</h3>
          <AddSectionForm pageId={page.id} onSectionAdded={fetchPageData} />

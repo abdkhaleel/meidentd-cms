@@ -1,5 +1,23 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { promises as fs } from 'fs';
+import path from 'path';
+
+async function getAllSectionIds(rootId: string): Promise<string[]> {
+    const sections = await prisma.section.findMany({
+        where: { parentId: rootId },
+        select: { id: true }
+    });
+
+    let ids = [rootId]; 
+    
+    for (const section of sections) {
+        const descendantIds = await getAllSectionIds(section.id);
+        ids = [...ids, ...descendantIds];
+    }
+    
+    return ids;
+}
 
 export async function PUT(request: Request) {
     try {
@@ -49,6 +67,48 @@ export async function PUT(request: Request) {
     }
 }
 
+// export async function DELETE(request: Request) {
+//     try {
+//         const url = new URL(request.url);
+//         const id = url.pathname.split('/').pop();
+        
+//         if (!id) {
+//             return NextResponse.json(
+//                 { error: 'Section ID is missing from the URL' },
+//                 { status: 400 }
+//             );
+//         }
+
+//         const childCount = await prisma.section.count({
+//             where: { parentId: id },
+//         });
+
+//         if (childCount > 0) {
+//             return NextResponse.json(
+//                 { error: 'Cannot delete section with existing child sections' },
+//                 { status: 400 }
+//             );
+//         }
+
+//         await prisma.section.delete({
+//             where: { id },
+//         });
+
+//         return new NextResponse(null, { status: 204 });
+//     }
+
+//     catch (error) {
+//         console.error('Error deleting section:', error);
+        
+//         if ((error as any).code === 'P2025') {
+//             return NextResponse.json({ error: 'Section not found' }, { status: 404 });
+//         }
+//         return NextResponse.json(
+//             { error: 'Failed to delete section' },
+//             { status: 500 },
+//         );
+//     }
+// }
 export async function DELETE(request: Request) {
     try {
         const url = new URL(request.url);
@@ -61,15 +121,21 @@ export async function DELETE(request: Request) {
             );
         }
 
-        const childCount = await prisma.section.count({
-            where: { parentId: id },
+        const allSectionIds = await getAllSectionIds(id);
+
+        const imagesToDelete = await prisma.image.findMany({
+            where: {
+                sectionId: { in: allSectionIds }
+            }
         });
 
-        if (childCount > 0) {
-            return NextResponse.json(
-                { error: 'Cannot delete section with existing child sections' },
-                { status: 400 }
-            );
+        for (const img of imagesToDelete) {
+            try {
+                const filePath = path.join(process.cwd(), 'public', img.url);
+                await fs.unlink(filePath);
+            } catch (err) {
+                console.warn(`Could not delete file: ${img.url}`, err);
+            }
         }
 
         await prisma.section.delete({
@@ -78,7 +144,6 @@ export async function DELETE(request: Request) {
 
         return new NextResponse(null, { status: 204 });
     }
-
     catch (error) {
         console.error('Error deleting section:', error);
         
