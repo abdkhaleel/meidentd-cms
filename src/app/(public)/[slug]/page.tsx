@@ -181,7 +181,7 @@ function RootSection({ section, index }: { section: SectionData; index: number }
       className="mb-24 scroll-mt-32"
     >
       {/* 1. STICKY HEADER FOR THE SECTION */}
-      <div className="sticky top-24 z-20 bg-white/90 backdrop-blur-md py-4 border-b border-brand-primary/10 mb-8">
+      <div className="sticky top-18 z-20 bg-white/90 backdrop-blur-md py-4 border-b border-brand-primary/10 mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="flex items-center justify-center w-8 h-8 bg-brand-secondary text-white font-mono text-sm rounded-lg shadow-md">

@@ -60,14 +60,11 @@ function ProductScrollSection() {
   // Smooth out the scroll value
   const smoothProgress = useSpring(scrollYProgress, { stiffness: 200, damping: 30 });
 
-  // Map scroll progress (0 to 1) to the current product index (0 to 4)
-  // We use a state to force re-render when index changes for animations
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     const unsubscribe = smoothProgress.on("change", (latest) => {
       const length = PRODUCTS.length;
-      // Calculate which segment we are in
       const step = 1 / length;
       const index = Math.min(Math.floor(latest / step), length - 1);
       setActiveIndex(index);
@@ -227,7 +224,7 @@ export default function HomePage() {
               transition={{ duration: 1.2 }}
               className="absolute inset-0 w-full h-full"
             >
-              {/* Note: Use Next.js Image in production if possible */}
+              
               <img
                 src={HERO_IMAGES[currentImageIndex]}
                 alt={`Hero Banner ${currentImageIndex + 1}`}
@@ -275,9 +272,9 @@ export default function HomePage() {
               Leading Innovation
             </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4 md:mb-6 drop-shadow-lg">
-              <span className="text-gray-100 inline-block mt-2">Empowering India&apos;s</span>
+              <span className="text-gray-100 inline-block mt-2">Meiden T&amp;D</span>
               <br />
-              <span className="text-yellow-300 inline-block mt-2">Energy Future</span>
+              <span className="text-yellow-300 inline-block mt-2">India Limited</span>
             </h1>
             <p className="text-sm sm:text-base md:text-lg text-gray-100 mb-6 md:mb-8 leading-relaxed font-light max-w-lg">
               Delivering advanced Transmission &amp; Distribution solutions engineered with Japanese and global reliability.

@@ -224,9 +224,15 @@ function SortableSectionItem({ section, onUpdate, pageId, level }: { section: Se
   };
 
   const handleDelete = async () => {
-    if (!confirm('Delete this section?')) return;
+    console.log("Called Delete Method");
+    // if (!confirm('Delete this section?')){ 
+    //   console.log("Delete aborted");
+    //   return;
+    // }
     setIsDeleting(true);
     try {
+
+      console.log("Called Delete API");
       await fetch(`/api/sections/${section.id}`, { method: 'DELETE' });
       onUpdate();
     } catch (e) { alert('Error deleting'); }
