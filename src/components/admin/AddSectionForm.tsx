@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Plus, Type, ListOrdered, AlertCircle, Layers, Save, Loader2 } from 'lucide-react';
 import TinyEditor from './TinyEditor';
 
 interface AddSectionFormProps {
@@ -42,9 +43,7 @@ export default function AddSectionForm({ pageId, parentId, onSectionAdded }: Add
       setTitle('');
       setContent('');
       setOrder(0);
-      
       onSectionAdded();
-
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -53,86 +52,111 @@ export default function AddSectionForm({ pageId, parentId, onSectionAdded }: Add
   };
 
   return (
-    // Wrapper: Light gray background to distinguish "Admin Mode" from standard content
-    <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 my-8 shadow-sm">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm transition-all hover:shadow-md duration-300 overflow-hidden my-8">
       
-      {/* Header */}
-      <h3 className="text-lg font-bold text-brand-secondary mb-4 border-b border-gray-200 pb-2">
-        {parentId ? 'Add New Nested Section' : 'Add New Top-Level Section'}
-      </h3>
+      {/* Decorative Header */}
+      <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${parentId ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-brand-primary'}`}>
+            <Layers size={20} />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-gray-800">
+              {parentId ? 'Nested Section' : 'New Section'}
+            </h3>
+            <p className="text-xs text-gray-500">
+              {parentId ? 'Adding content inside a parent section' : 'Adding a top-level block to the page'}
+            </p>
+          </div>
+        </div>
+        {/* Optional: Add a subtle badge or indicator here if needed */}
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="p-6 space-y-6">
         
-        {/* Title Input */}
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-1">
-            Section Title
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary transition-all"
-            placeholder="Enter section title..."
-          />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* Title Input (Span 3 on desktop) */}
+          <div className="md:col-span-3 space-y-1.5">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              Section Title <span className="text-red-500">*</span>
+            </label>
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Type size={16} className="text-gray-400 group-focus-within:text-brand-primary transition-colors" />
+              </div>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
+                placeholder="e.g., 'Company History' or 'Services'"
+              />
+            </div>
+          </div>
+
+          {/* Order Input (Span 1 on desktop) */}
+          <div className="md:col-span-1 space-y-1.5">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              Order
+            </label>
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <ListOrdered size={16} className="text-gray-400 group-focus-within:text-brand-primary transition-colors" />
+              </div>
+              <input
+                type="number"
+                value={order}
+                onChange={(e) => setOrder(parseInt(e.target.value, 10))}
+                required
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Content Editor */}
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-1">
-            Content
+        <div className="space-y-1.5">
+          <label className="text-sm font-semibold text-gray-700">
+            Content Body
           </label>
-          <div className="border border-gray-300 rounded-md overflow-hidden">
+          {/* Wrapper to give the editor the same focus ring style */}
+          <div className="rounded-lg border border-gray-200 overflow-hidden focus-within:ring-2 focus-within:ring-brand-primary/20 focus-within:border-brand-primary transition-all shadow-sm">
              <TinyEditor value={content} onEditorChange={setContent} />
           </div>
         </div>
 
-        {/* Order Input */}
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-1">
-            Sort Order
-          </label>
-          <input
-            type="number"
-            value={order}
-            onChange={(e) => setOrder(parseInt(e.target.value, 10))}
-            required
-            className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary/50 focus:border-brand-primary transition-all"
-          />
-          <p className="text-xs text-gray-500 mt-1">Lower numbers appear first.</p>
-        </div>
-
         {/* Error Message */}
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
-            {error}
+          <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-lg text-red-600 text-sm animate-in fade-in slide-in-from-top-2">
+            <AlertCircle size={18} className="flex-shrink-0" />
+            <p>{error}</p>
           </div>
         )}
 
-        {/* Action Button */}
-        <div className="flex justify-end">
+        {/* Action Footer */}
+        <div className="pt-2 flex items-center justify-end border-t border-gray-50">
           <button 
             type="submit" 
             disabled={isSubmitting}
             className={`
-              px-6 py-2.5 rounded-md text-white font-medium shadow-sm transition-all
+              flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold text-white shadow-md transition-all duration-200
               ${isSubmitting 
-                ? 'bg-brand-primary/70 cursor-not-allowed' 
-                : 'bg-brand-primary hover:bg-brand-deep hover:shadow-md'
+                ? 'bg-gray-400 cursor-not-allowed shadow-none' 
+                : 'bg-brand-primary hover:bg-brand-deep hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
               }
             `}
           >
             {isSubmitting ? (
-              <span className="flex items-center">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Saving...
-              </span>
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Saving...</span>
+              </>
             ) : (
-              'Add Section'
+              <>
+                <Plus size={16} strokeWidth={3} />
+                <span>Add Section</span>
+              </>
             )}
           </button>
         </div>
