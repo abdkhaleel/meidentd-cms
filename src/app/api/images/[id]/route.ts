@@ -7,21 +7,16 @@ import path from 'path';
 
 export async function DELETE(
   request: Request,
-  // We keep the context parameter for correct function signature, but will not use it.
   context: { params: { id: string } }
 ) {
   try {
-    // --- WORKAROUND FOR PARAMS BUG ---
-    // Manually parse the ID from the request URL.
     const url = new URL(request.url);
     const imageId = url.pathname.split('/').pop();
-    // ------------------------------------
 
     if (!imageId) {
       return NextResponse.json({ error: 'Image ID is missing' }, { status: 400 });
     }
 
-    // 1. Find the image record in the database
     const image = await prisma.image.findUnique({
       where: { id: imageId },
     });
@@ -30,12 +25,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Image not found' }, { status: 404 });
     }
 
-    // 2. Delete the image record from the database
     await prisma.image.delete({
       where: { id: imageId },
     });
 
-    // 3. Delete the actual file from the filesystem
     try {
       const filePath = path.join(process.cwd(), 'public', image.url);
       await fs.unlink(filePath);
@@ -52,6 +45,39 @@ export async function DELETE(
     }
     return NextResponse.json(
       { error: 'Failed to delete image' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const url = new URL(request.url);
+    const id = url.pathname.split('/').pop();
+
+    if (!id) {
+      return NextResponse.json({ error: 'Image ID is missing' }, { status: 400 });
+    }
+
+    const body = await request.json();
+    const { caption, altText } = body;
+
+    const updatedImage = await prisma.image.update({
+      where: { id },
+      data: {
+        caption,
+        altText,
+      },
+    });
+
+    return NextResponse.json(updatedImage, { status: 200 });
+  } catch (error) {
+    console.error('Error updating image:', error);
+    return NextResponse.json(
+      { error: 'Failed to update image details' },
       { status: 500 }
     );
   }

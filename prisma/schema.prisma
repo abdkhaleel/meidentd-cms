@@ -16,34 +16,28 @@ model User {
   updatedAt     DateTime  @updatedAt
 }
 
-// Model for a main page of the website (e.g., "About Us")
 model Page {
   id        String    @id @default(uuid())
-  title     String    // e.g., "About Us"
-  slug      String    @unique // e.g., "about-us" for the URL
+  title     String
+  slug      String    @unique
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  // A Page can have many Sections
   sections  Section[]
 }
 
-// Model for a dynamic content block (a section)
 model Section {
   id        String    @id @default(uuid())
-  title     String    // The title of the expandable section, e.g., "Our History"
-  content   String    @db.Text // The rich text content
-  order     Int       // A number to determine the display order
+  title     String
+  content   String    @db.Text
+  order     Int
 
-  // A Section can have many Images
   images    Image[]
 
-  // --- Nesting Logic ---
   parentId  String?
   parent    Section?  @relation("NestedSections", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: NoAction) 
   children  Section[] @relation("NestedSections")
 
-  // --- Page Relationship ---
   pageId    String
   page      Page      @relation(fields: [pageId], references: [id], onDelete: Cascade) 
 
@@ -51,15 +45,14 @@ model Section {
   updatedAt DateTime  @updatedAt
 }
 
-// NEW: Model specifically for images
 model Image {
   id        String    @id @default(uuid())
-  url       String    // The URL to the image (local path or GCS URL)
-  altText   String    // Important for SEO and accessibility
-  order     Int       // Order of images within a section
+  url       String
+  altText   String
+  caption   String?
+  order     Int
   createdAt DateTime  @default(now())
 
-  // --- Section Relationship ---
   sectionId String
   section   Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade) 
 }

@@ -6,6 +6,7 @@ import Image from 'next/image';
 export type ImageData = {
   id: string;
   url: string;
+  caption: string | null;
   altText: string;
 };
 

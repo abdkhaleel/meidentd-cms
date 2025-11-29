@@ -2,23 +2,20 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
-import { ChevronRight, ChevronDown, LayoutGrid, ImageIcon, Hash } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, LayoutGrid, Hash } from 'lucide-react';
 import ImageCarousel from '@/components/ImageCarousel';
-import Image from 'next/image';
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-// --- UTILS ---
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// --- TYPES ---
-// (Assuming these are consistent with your project)
 export type ImageData = {
   id: string;
   url: string;
+  caption?: string | null;
   altText: string;
 };
 
@@ -36,9 +33,6 @@ type PageData = {
   sections: SectionData[];
 };
 
-// ============================================================================
-// COMPONENT: LEVEL 2+ (DEEP NESTING) - ACCORDION STYLE
-// ============================================================================
 function DeepNestedSection({ section }: { section: SectionData }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -68,20 +62,17 @@ function DeepNestedSection({ section }: { section: SectionData }) {
             className="overflow-hidden"
           >
             <div className="p-5 border-t border-gray-100">
-              {/* Images in Accordion */}
               {section.images?.length > 0 && (
                 <div className="mb-4">
                    <ImageCarousel images={section.images} />
                 </div>
               )}
               
-              {/* Content */}
               <div 
                 className="prose-brand prose-sm text-gray-600"
                 dangerouslySetInnerHTML={{ __html: section.content }}
               />
 
-              {/* Infinite Recursion Handling */}
               {section.children?.length > 0 && (
                 <div className="pl-4 mt-4 border-l-2 border-gray-100 space-y-2">
                   {section.children.map(child => (
@@ -97,9 +88,6 @@ function DeepNestedSection({ section }: { section: SectionData }) {
   );
 }
 
-// ============================================================================
-// COMPONENT: LEVEL 1 (DIRECT CHILDREN) - ALTERNATING LAYOUT
-// ============================================================================
 function FeatureBlock({ section, index }: { section: SectionData; index: number }) {
   const isEven = index % 2 === 0;
   const hasImages = section.images && section.images.length > 0;
@@ -114,11 +102,9 @@ function FeatureBlock({ section, index }: { section: SectionData; index: number 
     >
       <div className={cn(
         "flex flex-col gap-10",
-        // Desktop: Alternate layout if images exist
         hasImages ? (isEven ? "lg:flex-row" : "lg:flex-row-reverse") : "lg:flex-col"
       )}>
         
-        {/* TEXT COLUMN */}
         <div className={cn("flex-1", hasImages ? "lg:w-1/2" : "w-full")}>
           <div className="flex items-center gap-2 mb-4 opacity-60">
              <LayoutGrid size={16} className="text-brand-primary" />
@@ -134,7 +120,6 @@ function FeatureBlock({ section, index }: { section: SectionData; index: number 
             dangerouslySetInnerHTML={{ __html: section.content }}
           />
 
-          {/* Render Level 2 Children as Accordions */}
           {section.children && section.children.length > 0 && (
             <div className="mt-8 space-y-3">
               <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">In Detail</h4>
@@ -145,17 +130,15 @@ function FeatureBlock({ section, index }: { section: SectionData; index: number 
           )}
         </div>
 
-        {/* VISUAL COLUMN (Only if images exist) */}
         {hasImages && (
           <div className="lg:w-1/2 relative">
              <div className={cn(
                "relative rounded-xl overflow-hidden shadow-2xl border-4 border-white ring-1 ring-gray-100 bg-gray-100",
-               // Add a subtle tilt or offset for style
+
                isEven ? "lg:rotate-1" : "lg:-rotate-1"
              )}>
                <ImageCarousel images={section.images} />
              </div>
-             {/* Decorative Element */}
              <div className={cn(
                "absolute -bottom-6 -z-10 w-full h-full bg-brand-primary/5 rounded-xl",
                isEven ? "-right-6" : "-left-6"
@@ -167,11 +150,7 @@ function FeatureBlock({ section, index }: { section: SectionData; index: number 
   );
 }
 
-// ============================================================================
-// COMPONENT: LEVEL 0 (ROOT SECTION) - THE CHAPTER WRAPPER
-// ============================================================================
 function RootSection({ section, index }: { section: SectionData; index: number }) {
-  // Ref for scroll spy
   const ref = useRef<HTMLDivElement>(null);
 
   return (
@@ -180,7 +159,6 @@ function RootSection({ section, index }: { section: SectionData; index: number }
       ref={ref}
       className="mb-24 scroll-mt-32"
     >
-      {/* 1. STICKY HEADER FOR THE SECTION */}
       <div className="sticky top-18 z-20 bg-white/90 backdrop-blur-md py-4 border-b border-brand-primary/10 mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -195,7 +173,6 @@ function RootSection({ section, index }: { section: SectionData; index: number }
         </div>
       </div>
 
-      {/* 2. MAIN CONTENT OF ROOT SECTION */}
       <div className="mb-12">
         {section.images && section.images.length > 0 && (
           <motion.div 
@@ -215,7 +192,6 @@ function RootSection({ section, index }: { section: SectionData; index: number }
         />
       </div>
 
-      {/* 3. RENDER CHILDREN (LEVEL 1) */}
       <div className="pl-0 md:pl-4 border-l-2 border-dashed border-gray-200 space-y-8">
         {section.children && section.children.map((child, idx) => (
           <FeatureBlock key={child.id} section={child} index={idx} />
@@ -227,9 +203,6 @@ function RootSection({ section, index }: { section: SectionData; index: number }
 }
 
 
-// ============================================================================
-// MAIN PAGE COMPONENT
-// ============================================================================
 export default function DynamicPage() {
   const params = useParams();
   const slug = params.slug as string;
@@ -238,7 +211,6 @@ export default function DynamicPage() {
   const [activeSectionId, setActiveSectionId] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
-  // Refs for scroll spy
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   useEffect(() => {
@@ -259,15 +231,13 @@ export default function DynamicPage() {
     getPageData();
   }, [slug]);
 
-  // --- SCROLL SPY ---
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 200; // Adjusted offset
+      const scrollPosition = window.scrollY + 200; 
       let currentId = activeSectionId;
       
       if(page?.sections) {
         for (const section of page.sections) {
-          // We assume the element ID matches the section ID
           const element = document.getElementById(section.id);
           if (element) {
             const { offsetTop, offsetHeight } = element;
@@ -304,7 +274,6 @@ export default function DynamicPage() {
 
   return (
     <div className="bg-white min-h-screen">
-      {/* HEADER BANNER */}
       <div className="bg-brand-secondary text-white py-16 md:py-24 relative overflow-hidden">
          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
          <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-brand-primary/50 rounded-full blur-3xl"></div>
@@ -322,7 +291,6 @@ export default function DynamicPage() {
 
       <div className="container mx-auto px-4 py-12 flex flex-col lg:flex-row gap-16">
         
-        {/* --- LEFT SIDEBAR (STICKY) --- */}
         <aside className="hidden lg:block w-64 shrink-0">
           <div className="sticky top-32">
             <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 shadow-sm">
@@ -330,7 +298,6 @@ export default function DynamicPage() {
                 <Hash size={12} /> On This Page
               </h3>
               <nav className="space-y-1 relative">
-                {/* Active Line Tracker */}
                 <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-gray-200 rounded-full" />
                 
                 {page.sections.map((section) => (
@@ -358,13 +325,11 @@ export default function DynamicPage() {
           </div>
         </aside>
 
-        {/* --- RIGHT CONTENT --- */}
         <main className="flex-1 min-w-0">
           {page.sections.map((section, index) => (
             <RootSection key={section.id} section={section} index={index} />
           ))}
           
-          {/* Footer Spacer */}
           <div className="h-32 flex items-center justify-center text-gray-300 text-sm">
              End of content
           </div>

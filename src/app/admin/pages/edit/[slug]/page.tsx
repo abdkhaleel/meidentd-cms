@@ -25,14 +25,13 @@ import {
   ChevronRight, AlertTriangle, CornerDownRight 
 } from 'lucide-react';
 
-// Assuming these exist from previous steps
 import AddSectionForm from "@/components/admin/AddSectionForm";
 import TinyEditor from "@/components/admin/TinyEditor";
 
-// --- TYPES ---
 export type ImageData = {
   id: string;
   url: string;
+  caption: string | null;
   altText: string;
 };
 
@@ -52,9 +51,6 @@ export type PageData = {
   sections: SectionData[];
 };
 
-// --- 1. REUSABLE MODALS ---
-
-// Generic Backdrop Modal
 function ModalWrapper({ 
   children, 
   maxWidth = "max-w-4xl" 
@@ -72,7 +68,111 @@ function ModalWrapper({
   );
 }
 
-// Confirmation Modal
+
+function ImageCard({ img, onDelete, onUpdate }: { 
+  img: ImageData; 
+  onDelete: (id: string) => void; 
+  onUpdate: () => void; // Trigger parent refresh
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [caption, setCaption] = useState(img.caption || '');
+  const [altText, setAltText] = useState(img.altText || '');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/images/${img.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ caption, altText }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update');
+      
+      onUpdate(); 
+      setIsEditing(false);
+    } catch (error) {
+      console.error(error);
+      alert('Failed to save details');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="bg-white p-3 rounded-lg border border-brand-primary shadow-md flex flex-col gap-3 h-full">
+        <div>
+          <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Caption</label>
+          <input 
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            className="w-full text-sm px-2 py-1 border border-gray-200 rounded focus:border-brand-primary outline-none"
+            placeholder="Image caption..."
+          />
+        </div>
+        <div>
+          <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Alt Text</label>
+          <input 
+            value={altText}
+            onChange={(e) => setAltText(e.target.value)}
+            className="w-full text-sm px-2 py-1 border border-gray-200 rounded focus:border-brand-primary outline-none"
+            placeholder="SEO Alt text"
+          />
+        </div>
+        <div className="mt-auto flex gap-2 pt-2">
+          <button 
+            onClick={() => setIsEditing(false)}
+            className="flex-1 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex-1 py-1.5 text-xs font-bold text-white bg-brand-primary hover:bg-brand-deep rounded shadow transition-colors flex justify-center items-center"
+          >
+            {isSaving ? <Loader2 className="animate-spin w-3 h-3" /> : 'Save'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="group relative aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+      <img src={img.url} alt={img.altText} className="w-full h-full object-cover" />
+      
+      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-200">
+        <button 
+          onClick={() => setIsEditing(true)} 
+          className="p-2 bg-white text-blue-600 rounded-full hover:bg-blue-50 hover:scale-110 transition-all shadow-lg"
+          title="Edit Details"
+        >
+          <Edit size={18} />
+        </button>
+        <button 
+          onClick={() => onDelete(img.id)} 
+          className="p-2 bg-white text-red-600 rounded-full hover:bg-red-50 hover:scale-110 transition-all shadow-lg"
+          title="Delete Image"
+        >
+          <Trash2 size={18} />
+        </button>
+      </div>
+      
+      <div className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-sm text-white px-2 py-1">
+        {img.caption ? (
+           <p className="text-xs font-medium truncate">{img.caption}</p>
+        ) : (
+           <p className="text-[10px] text-gray-300 truncate italic">No caption</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 function DeleteConfirmModal({ 
   isOpen, 
   onClose, 
@@ -121,7 +221,6 @@ function DeleteConfirmModal({
   );
 }
 
-// Edit Content Modal
 function EditSectionModal({ section, onClose, onUpdate }: { section: SectionData, onClose: () => void, onUpdate: () => void }) {
   const [title, setTitle] = useState(section.title);
   const [content, setContent] = useState(section.content);
@@ -192,7 +291,6 @@ function EditSectionModal({ section, onClose, onUpdate }: { section: SectionData
   );
 }
 
-// Image Manager Modal
 function ImageManagerModal({ section, onClose, onUpdate }: { section: SectionData, onClose: () => void, onUpdate: () => void }) {
   const [uploading, setUploading] = useState(false);
   const [imageToDelete, setImageToDelete] = useState<string | null>(null);
@@ -243,9 +341,8 @@ function ImageManagerModal({ section, onClose, onUpdate }: { section: SectionDat
       </div>
 
       <div className="p-6 overflow-y-auto max-h-[60vh]">
-        {/* Dropzone */}
         <div className="mb-8">
-          <div className="relative border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-brand-primary/5 hover:border-brand-primary/50 rounded-xl transition-all cursor-pointer h-32 flex items-center justify-center group">
+          <div className="relative border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-brand-primary/5 hover:border-brand-primary/50 rounded-xl transition-all cursor-pointer h-24 flex items-center justify-center group">
             <input 
                 type="file" 
                 onChange={handleUpload} 
@@ -255,44 +352,31 @@ function ImageManagerModal({ section, onClose, onUpdate }: { section: SectionDat
             />
             <div className="flex flex-col items-center justify-center text-gray-400 group-hover:text-brand-primary transition-colors">
                 {uploading ? (
-                  <Loader2 className="w-8 h-8 animate-spin mb-2" />
+                  <Loader2 className="w-6 h-6 animate-spin mb-1" />
                 ) : (
-                  <Upload className="w-8 h-8 mb-2" />
+                  <Upload className="w-6 h-6 mb-1" />
                 )}
                 <span className="text-sm font-semibold">
-                  {uploading ? 'Uploading...' : 'Click to Upload or Drag Image Here'}
+                  {uploading ? 'Uploading...' : 'Click to Upload Image'}
                 </span>
             </div>
           </div>
         </div>
 
-        {/* Gallery Grid */}
         {section.images.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-100">
-            <ImageIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">No images uploaded yet.</p>
+          <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-100">
+            <ImageIcon className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-500 font-medium">No images uploaded yet.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {section.images.map(img => (
-              <div key={img.id} className="group relative aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
-                <img src={img.url} alt={img.altText} className="w-full h-full object-cover" />
-                
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
-                  <button 
-                    onClick={() => setImageToDelete(img.id)} 
-                    className="p-2 bg-white text-red-600 rounded-full hover:bg-red-50 hover:scale-110 transition-all shadow-lg"
-                    title="Delete Image"
-                  >
-                    <Trash2 size={20} />
-                  </button>
-                </div>
-                
-                <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] px-2 py-1 truncate">
-                  {img.url.split('/').pop()}
-                </div>
-              </div>
+              <ImageCard 
+                key={img.id} 
+                img={img} 
+                onDelete={(id) => setImageToDelete(id)}
+                onUpdate={onUpdate}
+              />
             ))}
           </div>
         )}
@@ -310,7 +394,6 @@ function ImageManagerModal({ section, onClose, onUpdate }: { section: SectionDat
   );
 }
 
-// --- 2. SORTABLE ITEMS ---
 
 function SortableSectionItem({ section, onUpdate, pageId, level }: { section: SectionData, onUpdate: () => void, pageId: string, level: number }) {
   const [showEdit, setShowEdit] = useState(false);
@@ -346,13 +429,11 @@ function SortableSectionItem({ section, onUpdate, pageId, level }: { section: Se
     finally { setIsDeleting(false); }
   };
 
-  // Indentation Visuals
   const indentClass = level > 0 ? 'ml-6 md:ml-12' : '';
   
   return (
     <div ref={setNodeRef} style={style} className={`relative mb-4 ${indentClass}`}>
       
-      {/* Connector Line for Nested Items */}
       {level > 0 && (
         <div className="absolute -left-4 md:-left-8 top-8 w-4 md:w-8 h-px bg-gray-300 border-b border-dashed border-gray-300 rounded-bl-xl" />
       )}
@@ -360,14 +441,12 @@ function SortableSectionItem({ section, onUpdate, pageId, level }: { section: Se
         <div className="absolute -left-4 md:-left-8 -top-4 bottom-0 w-px bg-gray-200" />
       )}
 
-      {/* Main Card */}
       <div className={`
         bg-white rounded-xl border transition-all duration-200 group
         ${isDragging ? 'shadow-2xl scale-105 border-brand-primary' : 'shadow-sm border-gray-200 hover:shadow-md hover:border-brand-primary/30'}
       `}>
         <div className="flex flex-col sm:flex-row sm:items-center p-4 gap-4">
           
-          {/* Drag Handle & Info */}
           <div className="flex items-center flex-1 gap-3">
             <button 
               {...attributes} 
@@ -399,7 +478,6 @@ function SortableSectionItem({ section, onUpdate, pageId, level }: { section: Se
             </div>
           </div>
 
-          {/* Action Toolbar */}
           <div className="flex items-center justify-end gap-1 sm:border-l sm:border-gray-100 sm:pl-4">
             <button 
               onClick={() => setShowImages(true)} 
@@ -433,7 +511,6 @@ function SortableSectionItem({ section, onUpdate, pageId, level }: { section: Se
           </div>
         </div>
 
-        {/* Add Child Form Expansion */}
         {showAddChild && (
           <div className="border-t border-gray-100 bg-gray-50/50 p-4 md:p-6 animate-in slide-in-from-top-2">
             <AddSectionForm pageId={pageId} parentId={section.id} onSectionAdded={() => { setShowAddChild(false); onUpdate(); }} />
@@ -441,7 +518,6 @@ function SortableSectionItem({ section, onUpdate, pageId, level }: { section: Se
         )}
       </div>
 
-      {/* Render Modals */}
       {showEdit && <EditSectionModal section={section} onClose={() => setShowEdit(false)} onUpdate={onUpdate} />}
       {showImages && <ImageManagerModal section={section} onClose={() => setShowImages(false)} onUpdate={onUpdate} />}
 
@@ -463,7 +539,6 @@ function SortableSectionItem({ section, onUpdate, pageId, level }: { section: Se
         }
       />
 
-      {/* Recursive Children */}
       {section.children && section.children.length > 0 && (
          <div className="mt-4">
             <SortableList items={section.children} onUpdate={onUpdate} pageId={pageId} level={level + 1} />
@@ -490,7 +565,6 @@ function SortableList({ items, onUpdate, pageId, level = 0 }: { items: SectionDa
       const newOrder = arrayMove(sortedItems, oldIndex, newIndex);
       setSortedItems(newOrder);
 
-      // Save new order to backend
       try {
         await Promise.all(newOrder.map((item, index) => 
           fetch(`/api/sections/${item.id}`, {
@@ -523,7 +597,6 @@ function SortableList({ items, onUpdate, pageId, level = 0 }: { items: SectionDa
   );
 }
 
-// --- 3. MAIN PAGE COMPONENT ---
 export default function PageEditor() {
   const params = useParams();
   const slug = params.slug as string;
@@ -557,7 +630,6 @@ export default function PageEditor() {
   return (
     <div className="pb-20 max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      {/* Header */}
       <div className="mb-8 border-b border-gray-100 pb-6">
          <nav className="flex items-center text-sm text-gray-500 mb-3">
             <span className="hover:text-gray-800 transition-colors">Pages</span> 
@@ -574,7 +646,6 @@ export default function PageEditor() {
          </div>
       </div>
 
-      {/* Sections List */}
       <div className="space-y-6 min-h-[200px]">
         {page.sections.length === 0 ? (
            <div className="text-center py-16 bg-white rounded-xl border-2 border-dashed border-gray-200">
@@ -586,7 +657,6 @@ export default function PageEditor() {
         )}
       </div>
 
-      {/* Add New Section Area */}
       <div className="mt-12">
          <div className="flex items-center mb-6">
             <div className="h-px flex-1 bg-gray-200"></div>
