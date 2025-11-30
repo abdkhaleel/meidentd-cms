@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, LayoutGrid, Hash } from 'lucide-react';
+import { ChevronDown, LayoutGrid } from 'lucide-react';
 import ImageCarousel from '@/components/ImageCarousel';
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -63,7 +63,7 @@ function DeepNestedSection({ section }: { section: SectionData }) {
           >
             <div className="p-5 border-t border-gray-100">
               {section.images?.length > 0 && (
-                <div className="mb-4">
+                <div className="mb-6 w-full">
                    <ImageCarousel images={section.images} />
                 </div>
               )}
@@ -105,7 +105,7 @@ function FeatureBlock({ section, index }: { section: SectionData; index: number 
         hasImages ? (isEven ? "lg:flex-row" : "lg:flex-row-reverse") : "lg:flex-col"
       )}>
         
-        <div className={cn("flex-1", hasImages ? "lg:w-1/2" : "w-full")}>
+        <div className={cn("flex-1 min-w-0", hasImages ? "lg:w-1/2" : "w-full")}>
           <div className="flex items-center gap-2 mb-4 opacity-60">
              <LayoutGrid size={16} className="text-brand-primary" />
              <span className="text-xs font-bold tracking-widest text-brand-primary uppercase">Topic 0{index + 1}</span>
@@ -131,14 +131,14 @@ function FeatureBlock({ section, index }: { section: SectionData; index: number 
         </div>
 
         {hasImages && (
-          <div className="lg:w-1/2 relative">
+          <div className="lg:w-1/2 relative w-full">
              <div className={cn(
                "relative rounded-xl overflow-hidden shadow-2xl border-4 border-white ring-1 ring-gray-100 bg-gray-100",
-
                isEven ? "lg:rotate-1" : "lg:-rotate-1"
              )}>
                <ImageCarousel images={section.images} />
              </div>
+             
              <div className={cn(
                "absolute -bottom-6 -z-10 w-full h-full bg-brand-primary/5 rounded-xl",
                isEven ? "-right-6" : "-left-6"
@@ -180,7 +180,7 @@ function RootSection({ section, index }: { section: SectionData; index: number }
             whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
-            className="mb-8 rounded-2xl overflow-hidden shadow-xl aspect-video relative"
+            className="mb-8 rounded-2xl overflow-hidden shadow-xl relative w-full bg-gray-50 border border-gray-100"
           >
              <ImageCarousel images={section.images} />
           </motion.div>
@@ -201,7 +201,6 @@ function RootSection({ section, index }: { section: SectionData; index: number }
     </section>
   );
 }
-
 
 export default function DynamicPage() {
   const params = useParams();
@@ -295,7 +294,7 @@ export default function DynamicPage() {
           <div className="sticky top-32">
             <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 shadow-sm">
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
-                <Hash size={12} /> On This Page
+                 On This Page
               </h3>
               <nav className="space-y-1 relative">
                 <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-gray-200 rounded-full" />
@@ -329,10 +328,6 @@ export default function DynamicPage() {
           {page.sections.map((section, index) => (
             <RootSection key={section.id} section={section} index={index} />
           ))}
-          
-          <div className="h-32 flex items-center justify-center text-gray-300 text-sm">
-             End of content
-          </div>
         </main>
 
       </div>
