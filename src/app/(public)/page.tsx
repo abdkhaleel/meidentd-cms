@@ -51,13 +51,11 @@ const AUTO_SLIDE_INTERVAL = 5000;
 function ProductScrollSection() {
   const targetRef = useRef<HTMLDivElement>(null);
   
-  // Track scroll progress of this specific container
   const { scrollYProgress } = useScroll({
     target: targetRef,
     offset: ["start start", "end end"],
   });
 
-  // Smooth out the scroll value
   const smoothProgress = useSpring(scrollYProgress, { stiffness: 200, damping: 30 });
 
   const [activeIndex, setActiveIndex] = useState(0);
@@ -73,30 +71,21 @@ function ProductScrollSection() {
   }, [smoothProgress]);
 
   return (
-    // Height 300vh means the user has to scroll 3 screens worth of distance 
-    // to get through all 5 products. The content stays sticky.
     <section ref={targetRef} className="relative h-[300vh] bg-slate-900">
       
-      {/* STICKY CONTAINER: Stays fixed while parent scrolls */}
       <div className="sticky top-0 h-screen overflow-hidden flex items-center justify-center">
         
-        {/* Background Image (Idle / Not moving) */}
         <div className="absolute inset-0 z-0">
-             {/* Replace with a generic technical/blueprint background image if you have one */}
             <div className="w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black opacity-80"></div>
-            {/* Optional Grid Overlay */}
-            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
         </div>
 
         <div className="container mx-auto px-4 relative z-10 w-full h-full flex flex-col md:flex-row items-center">
           
-          {/* --- LEFT SIDE: CONNECTED LOGOS & NAVIGATION --- */}
           <div className="w-full md:w-1/3 lg:w-1/4 flex flex-col items-center md:items-start justify-center h-full pl-0 md:pl-10">
              <div className="relative">
-                {/* Vertical Connector Line */}
                 <div className="absolute left-[19px] top-4 bottom-4 w-1 bg-gray-700 -z-10 rounded-full h-82"></div>
                 
-                {/* Render Steps */}
                 <div className="space-y-8 py-4">
                   {PRODUCTS.map((prod, idx) => {
                     const isActive = idx === activeIndex;
@@ -104,10 +93,8 @@ function ProductScrollSection() {
                       <motion.div 
                         key={prod.id}
                         className="flex items-center gap-4 group cursor-pointer"
-                        // Optional: Allow clicking to jump (requires complex scrollTo logic, simplified here to visual)
                         animate={{ opacity: isActive ? 1 : 0.5, scale: isActive ? 1.1 : 1 }}
                       >
-                         {/* Logo Circle */}
                          <div 
                            className={`
                              w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg border-2 transition-colors duration-300 relative
@@ -119,7 +106,6 @@ function ProductScrollSection() {
                          >
                            {prod.letter}
                            
-                           {/* Pulse Effect for Active */}
                            {isActive && (
                              <motion.div 
                                layoutId="pulse"
@@ -131,7 +117,6 @@ function ProductScrollSection() {
                            )}
                          </div>
                          
-                         {/* Label (Hidden on small mobile, visible on desktop) */}
                          <span className={`hidden md:block font-medium text-sm transition-colors ${isActive ? 'text-white' : 'text-gray-500'}`}>
                            {prod.name}
                          </span>
@@ -139,8 +124,6 @@ function ProductScrollSection() {
                     );
                   })}
                 </div>
-
-                {/* Details Button */}
                 <div className="mt-8 ml-1">
                   <Link href="/products">
                     <button className="px-6 py-2 bg-transparent border border-blue-500 text-blue-400 font-bold text-sm rounded hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2 group">
@@ -152,10 +135,8 @@ function ProductScrollSection() {
              </div>
           </div>
 
-          {/* --- RIGHT/CENTER SIDE: CONTENT DISPLAY --- */}
           <div className="w-full md:w-2/3 lg:w-3/4 flex items-center justify-center p-6 md:p-12 h-[50vh] md:h-auto">
              
-             {/* Content Card */}
              <div className="relative w-full max-w-2xl aspect-[16/9] md:aspect-[21/9] flex items-center">
                 <AnimatePresence mode='wait'>
                   <motion.div
@@ -166,7 +147,6 @@ function ProductScrollSection() {
                     transition={{ duration: 0.5, ease: "easeOut" }}
                     className="w-full"
                   >
-                    {/* Decorative Backdrop Text */}
                     <div className="absolute -top-10 -left-10 text-9xl font-black text-white/5 select-none pointer-events-none z-0">
                       {PRODUCTS[activeIndex].letter}
                     </div>
@@ -195,13 +175,9 @@ function ProductScrollSection() {
   );
 }
 
-// ==========================================
-// MAIN PAGE COMPONENT
-// ==========================================
 export default function HomePage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Automatic slideshow logic
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % HERO_IMAGES.length);
@@ -212,7 +188,6 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       
-      {/* 1. HERO SECTION */}
       <section className="relative w-full h-[50vh] md:h-[60vh] min-h-[450px] bg-gray-900 overflow-hidden">
         <div className="absolute inset-0 w-full h-full">
           <AnimatePresence mode="wait">
@@ -235,7 +210,6 @@ export default function HomePage() {
           </AnimatePresence>
         </div>
 
-        {/* Indicators */}
         <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
           {HERO_IMAGES.map((_, index) => (
             <motion.button
@@ -248,7 +222,6 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* Bullet Train Shape */}
         <motion.div
           initial={{ x: '-120%', opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
@@ -260,7 +233,6 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-blue-600/40" />
         </motion.div>
 
-        {/* Hero Content */}
         <div className="absolute inset-0 flex items-center z-20 pointer-events-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -292,10 +264,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Spacer */}
       <div className="h-12 md:h-20 bg-white" />
 
-      {/* 2. FEATURES SECTION */}
       <section className="py-12 md:py-16 lg:py-20 bg-white z-10 relative">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
@@ -331,13 +301,11 @@ export default function HomePage() {
       </section>
       <section className="py-20 bg-slate-50 relative overflow-hidden">
         
-        {/* Background Decorative Blob */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-100/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             
-            {/* --- LEFT COLUMN: Narrative & Heading --- */}
             <motion.div 
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -363,7 +331,6 @@ export default function HomePage() {
                 <span>Established Trust & Reliability</span>
               </div>
 
-              {/* CTA Button */}
               <div className="mt-8">
                 <Link href="/about-us">
                   <button className="group flex items-center gap-2 text-slate-900 font-bold hover:text-blue-600 transition-colors">
@@ -375,10 +342,8 @@ export default function HomePage() {
             </motion.div>
 
 
-            {/* --- RIGHT COLUMN: Interactive Info Cards --- */}
             <div className="grid gap-6">
               
-              {/* Card 1: The Parent Company */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -400,7 +365,6 @@ export default function HomePage() {
                 </div>
               </motion.div>
 
-              {/* Card 2: The Facility (State of the Art) */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -428,7 +392,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. NEW PRODUCTS SCROLL SECTION */}
       <ProductScrollSection />
 
     </div>
