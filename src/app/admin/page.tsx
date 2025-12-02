@@ -7,7 +7,6 @@ import { LayoutDashboard, LogOut, FileText, ExternalLink, ArrowRight, Activity, 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
 
-  // 1. Sleek Loading State
   if (status === 'loading') {
     return (
       <div className="flex h-full w-full items-center justify-center p-12">
@@ -27,7 +26,6 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      {/* 1. Header Section with User Info & Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
@@ -49,7 +47,7 @@ export default function AdminDashboard() {
           </Link>
           
           <button 
-            onClick={() => signOut({ callbackUrl: '/' })}
+            onClick={() => signOut({ callbackUrl: window.location.origin })}
             className="flex items-center px-4 py-2 text-sm font-medium text-white bg-brand-secondary hover:bg-brand-primary rounded-lg shadow-md shadow-brand-secondary/20 transition-all hover:-translate-y-0.5"
           >
             <LogOut size={16} className="mr-2" />
@@ -58,7 +56,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* 2. Quick Stats Row (Optional but stylish addition) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
           <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
@@ -91,12 +88,10 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* 3. Main Action Grid */}
       <div>
         <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           
-          {/* Card: Manage Pages */}
           <Link href="/admin/pages" className="group relative overflow-hidden bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-lg hover:border-brand-primary/30 transition-all duration-300">
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
               <FileText size={100} />
@@ -118,7 +113,6 @@ export default function AdminDashboard() {
             </div>
           </Link>
 
-          {/* Card: View Site (Mobile prominent) */}
           <Link href="/" target="_blank" className="group relative overflow-hidden bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-lg hover:border-blue-400/30 transition-all duration-300">
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
               <ExternalLink size={100} />
