@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, LayoutGrid } from 'lucide-react';
+import { ChevronDown, LayoutGrid, FileText, Download, ExternalLink, Paperclip } from 'lucide-react';
 import ImageCarousel from '@/components/ImageCarousel';
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -19,6 +19,14 @@ export type ImageData = {
   altText: string;
 };
 
+export type DocumentData = {
+  id: string;
+  url: string;
+  title: string | null;
+  filename: string;
+  fileSize?: number;
+};
+
 export type SectionData = {
   id: string;
   title: string;
@@ -26,12 +34,57 @@ export type SectionData = {
   order: number;
   children: SectionData[];
   images: ImageData[];
+  documents: DocumentData[];
 };
 
 type PageData = {
   title: string;
   sections: SectionData[];
 };
+
+function SectionDocuments({ docs }: { docs: DocumentData[] }) {
+  if (!docs || docs.length === 0) return null;
+
+  return (
+    <div className="mt-8 mb-6">
+      <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+        <Paperclip size={16} className="text-brand-primary" />
+        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+          Attached Documents
+        </h4>
+      </div>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {docs.map((doc) => (
+          <a 
+            key={doc.id}
+            href={doc.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-brand-primary/50 hover:shadow-md transition-all duration-200"
+          >
+            <div className="p-2 bg-blue-50 text-blue-600 rounded-md group-hover:bg-blue-600 group-hover:text-white transition-colors">
+              <FileText size={20} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-700 truncate group-hover:text-brand-primary transition-colors">
+                {doc.title || doc.filename}
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[10px] text-gray-400 font-mono bg-gray-100 px-1.5 py-0.5 rounded">
+                  {doc.filename.split('.').pop()?.toUpperCase() || 'FILE'}
+                </span>
+                <span className="text-[10px] text-gray-400 flex items-center gap-1 group-hover:text-brand-secondary transition-colors">
+                  View File <ExternalLink size={10} />
+                </span>
+              </div>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function DeepNestedSection({ section }: { section: SectionData }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -72,6 +125,8 @@ function DeepNestedSection({ section }: { section: SectionData }) {
                 className="prose-brand prose-sm text-gray-600"
                 dangerouslySetInnerHTML={{ __html: section.content }}
               />
+
+              <SectionDocuments docs={section.documents} />
 
               {section.children?.length > 0 && (
                 <div className="pl-4 mt-4 border-l-2 border-gray-100 space-y-2">
@@ -119,6 +174,8 @@ function FeatureBlock({ section, index }: { section: SectionData; index: number 
             className="prose-brand prose-lg text-gray-600 leading-relaxed"
             dangerouslySetInnerHTML={{ __html: section.content }}
           />
+
+          <SectionDocuments docs={section.documents} />
 
           {section.children && section.children.length > 0 && (
             <div className="mt-8 space-y-3">
@@ -190,6 +247,8 @@ function RootSection({ section, index }: { section: SectionData; index: number }
           className="prose-brand prose-xl max-w-4xl text-gray-700 leading-loose"
           dangerouslySetInnerHTML={{ __html: section.content }}
         />
+
+        <SectionDocuments docs={section.documents} />
       </div>
 
       <div className="pl-0 md:pl-4 border-l-2 border-dashed border-gray-200 space-y-8">
@@ -209,8 +268,6 @@ export default function DynamicPage() {
   const [page, setPage] = useState<PageData | null>(null);
   const [activeSectionId, setActiveSectionId] = useState<string>("");
   const [loading, setLoading] = useState(true);
-
-  const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   useEffect(() => {
     if (!slug) return;
