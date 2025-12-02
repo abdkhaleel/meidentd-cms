@@ -38,6 +38,9 @@ export async function GET(
           orderBy: {
             createdAt: 'asc'
           }
+        },
+        documents: {
+          orderBy: { createdAt: 'desc' }
         }
       },
     });
@@ -106,12 +109,25 @@ export async function DELETE(request: Request) {
             }
         });
 
+        const documentsToDelete = await prisma.document.findMany({
+            where: { section: { pageId: page.id } }
+        });
+
         for (const img of imagesToDelete) {
             try {
                 const filePath = path.join(process.cwd(), 'public', img.url);
                 await fs.unlink(filePath);
             } catch (err) {
                 console.warn(`Could not delete file: ${img.url}`, err);
+            }
+        }
+
+        for (const doc of documentsToDelete) {
+            try {
+                const filePath = path.join(process.cwd(), 'public', doc.url);
+                await fs.unlink(filePath);
+            } catch (err) {
+                console.warn(`Could not delete document file: ${doc.url}`, err);
             }
         }
 
