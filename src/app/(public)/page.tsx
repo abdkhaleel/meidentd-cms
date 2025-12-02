@@ -1,46 +1,46 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
-import { ChevronRight, Zap, ShieldCheck, Globe, ArrowRight, Factory, Landmark, Award } from 'lucide-react';
+import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
+import { ChevronRight, Zap, ShieldCheck, Globe, ArrowRight, Factory, Landmark } from 'lucide-react';
 import Link from 'next/link';
 
 const HERO_IMAGES = [
   '/images/hero/hero1.jpg',
-  '/images/hero/hero2.jpg', 
-  '/images/hero/hero3.jpg', 
-  '/images/hero/hero4.jpg', 
+  '/images/hero/hero2.jpg',
+  '/images/hero/hero3.jpg',
+  '/images/hero/hero4.jpg',
   '/images/hero/hero5.jpg',
 ];
 
 const PRODUCTS = [
-  { 
-    id: 1, 
-    name: "Generator Transformer", 
-    letter: "G", 
+  {
+    id: 1,
+    name: "Generator Transformer",
+    letter: "G",
     description: "High-efficiency transformers designed to withstand extreme thermal and mechanical stresses in power generation plants."
   },
-  { 
-    id: 2, 
-    name: "Power Transformer", 
+  {
+    id: 2,
+    name: "Power Transformer",
     letter: "P",
     description: "Reliable transmission solutions ensuring stable voltage regulation and minimal energy loss across long distances."
   },
-  { 
-    id: 3, 
-    name: "Scott-Transformer (Railway)", 
+  {
+    id: 3,
+    name: "Scott-Transformer (Railway)",
     letter: "S",
     description: "Specialized railway transformers converting 3-phase supply to 2-phase for balanced traction loads."
   },
-  { 
-    id: 4, 
-    name: "V-connected Transformer", 
+  {
+    id: 4,
+    name: "V-connected Transformer",
     letter: "V",
     description: "Compact railway traction solutions optimized for specific load requirements and efficient space utilization."
   },
-  { 
-    id: 5, 
-    name: "Auto Transformer (Railway)", 
+  {
+    id: 5,
+    name: "Auto Transformer (Railway)",
     letter: "A",
     description: "Crucial for railway electrification, boosting voltage at intervals to maintain constant power supply to trains."
   }
@@ -50,14 +50,13 @@ const AUTO_SLIDE_INTERVAL = 5000;
 
 function ProductScrollSection() {
   const targetRef = useRef<HTMLDivElement>(null);
-  
+
   const { scrollYProgress } = useScroll({
     target: targetRef,
     offset: ["start start", "end end"],
   });
 
   const smoothProgress = useSpring(scrollYProgress, { stiffness: 200, damping: 30 });
-
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
@@ -72,103 +71,98 @@ function ProductScrollSection() {
 
   return (
     <section ref={targetRef} className="relative h-[300vh] bg-slate-900">
-      
-      <div className="sticky top-0 h-screen overflow-hidden flex items-center justify-center">
-        
+      <div className="sticky top-[70px] h-[calc(100vh-70px)] overflow-hidden flex items-center justify-center">
         <div className="absolute inset-0 z-0">
-            <div className="w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black opacity-80"></div>
-           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+          <div className="w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black opacity-80"></div>
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
         </div>
 
         <div className="container mx-auto px-4 relative z-10 w-full h-full flex flex-col md:flex-row items-center">
-          
-          <div className="w-full md:w-1/3 lg:w-1/4 flex flex-col items-center md:items-start justify-center h-full pl-0 md:pl-10">
-             <div className="relative">
-                <div className="absolute left-[19px] top-4 bottom-4 w-1 bg-gray-700 -z-10 rounded-full h-82"></div>
-                
-                <div className="space-y-8 py-4">
-                  {PRODUCTS.map((prod, idx) => {
-                    const isActive = idx === activeIndex;
-                    return (
-                      <motion.div 
-                        key={prod.id}
-                        className="flex items-center gap-4 group cursor-pointer"
-                        animate={{ opacity: isActive ? 1 : 0.5, scale: isActive ? 1.1 : 1 }}
-                      >
-                         <div 
-                           className={`
+          <div className="hidden md:flex w-full md:w-1/3 lg:w-1/4 flex-col items-center md:items-start justify-center h-full pl-0 md:pl-10">
+            <div className="relative">
+              <div className="absolute left-[19px] top-4 bottom-4 w-1 bg-gray-700 -z-10 rounded-full h-82"></div>
+
+              <div className="space-y-8 py-4">
+                {PRODUCTS.map((prod, idx) => {
+                  const isActive = idx === activeIndex;
+                  return (
+                    <motion.div
+                      key={prod.id}
+                      className="flex items-center gap-4 group cursor-pointer"
+                      animate={{ opacity: isActive ? 1 : 0.5, scale: isActive ? 1.1 : 1 }}
+                    >
+                      <div
+                        className={`
                              w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg border-2 transition-colors duration-300 relative
-                             ${isActive 
-                               ? 'bg-blue-600 border-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.6)]' 
-                               : 'bg-slate-800 border-gray-600 text-gray-400 group-hover:border-gray-400'
-                             }
+                             ${isActive
+                            ? 'bg-blue-600 border-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.6)]'
+                            : 'bg-slate-800 border-gray-600 text-gray-400 group-hover:border-gray-400'
+                          }
                            `}
-                         >
-                           {prod.letter}
-                           
-                           {isActive && (
-                             <motion.div 
-                               layoutId="pulse"
-                               className="absolute inset-0 rounded-full border-2 border-blue-400"
-                               initial={{ scale: 1, opacity: 1 }}
-                               animate={{ scale: 1.6, opacity: 0 }}
-                               transition={{ repeat: Infinity, duration: 1.5 }}
-                             />
-                           )}
-                         </div>
-                         
-                         <span className={`hidden md:block font-medium text-sm transition-colors ${isActive ? 'text-white' : 'text-gray-500'}`}>
-                           {prod.name}
-                         </span>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-                <div className="mt-8 ml-1">
-                  <Link href="/products">
-                    <button className="px-6 py-2 bg-transparent border border-blue-500 text-blue-400 font-bold text-sm rounded hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2 group">
-                      DETAILS
-                      <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform"/>
-                    </button>
-                  </Link>
-                </div>
-             </div>
+                      >
+                        {prod.letter}
+
+                        {isActive && (
+                          <motion.div
+                            layoutId="pulse"
+                            className="absolute inset-0 rounded-full border-2 border-blue-400 hidden md:block"
+                            initial={{ scale: 1, opacity: 1 }}
+                            animate={{ scale: 1.6, opacity: 0 }}
+                            transition={{ repeat: Infinity, duration: 1.5 }}
+                          />
+                        )}
+                      </div>
+
+                      <span className={`hidden md:block font-medium text-sm transition-colors ${isActive ? 'text-white' : 'text-gray-500'}`}>
+                        {prod.name}
+                      </span>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
-          <div className="w-full md:w-2/3 lg:w-3/4 flex items-center justify-center p-6 md:p-12 h-[50vh] md:h-auto">
-             
-             <div className="relative w-full max-w-2xl aspect-[16/9] md:aspect-[21/9] flex items-center">
-                <AnimatePresence mode='wait'>
-                  <motion.div
-                    key={activeIndex}
-                    initial={{ opacity: 0, x: 50, filter: "blur(10px)" }}
-                    animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-                    exit={{ opacity: 0, x: -50, filter: "blur(10px)" }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="w-full"
-                  >
-                    <div className="absolute -top-10 -left-10 text-9xl font-black text-white/5 select-none pointer-events-none z-0">
-                      {PRODUCTS[activeIndex].letter}
+          <div className="top-[70px] h-[calc(100vh-70px)] w-full md:w-2/3 lg:w-3/4 flex items-center justify-center p-6 md:p-12 h-[50vh] md:h-auto">
+            <div className="relative w-full max-w-2xl aspect-[16/9] md:aspect-[21/9] flex items-center">
+              <AnimatePresence mode='wait'>
+                <motion.div
+                  key={activeIndex}
+                  initial={{ opacity: 0, x: 50, filter: "blur(10px)" }}
+                  animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, x: -50, filter: "blur(10px)" }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  className="w-full"
+                >
+                  <div className="absolute -top-10 -left-10 text-9xl font-black text-white/5 select-none pointer-events-none z-0">
+                    {PRODUCTS[activeIndex].letter}
+                  </div>
+
+                  <div className="relative z-10">
+                    <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-2">
+                      Product &amp; Solution 0{activeIndex + 1}
+                    </h3>
+                    <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">
+                      {PRODUCTS[activeIndex].name}
+                    </h2>
+                    <p className="text-lg text-gray-300 leading-relaxed border-l-4 border-blue-500 pl-6 mb-8">
+                      {PRODUCTS[activeIndex].description}
+                    </p>
+
+                    <div className="pl-6">
+                      <Link href="/products">
+                        <button className="px-6 py-2 bg-transparent border border-blue-500 text-blue-400 font-bold text-sm rounded hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2 group">
+                          DETAILS
+                          <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                        </button>
+                      </Link>
                     </div>
+                  </div>
 
-                    <div className="relative z-10">
-                      <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-2">
-                        Product &amp; Solution 0{activeIndex + 1}
-                      </h3>
-                      <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">
-                        {PRODUCTS[activeIndex].name}
-                      </h2>
-                      <p className="text-lg text-gray-300 leading-relaxed border-l-4 border-blue-500 pl-6">
-                        {PRODUCTS[activeIndex].description}
-                      </p>
-                    </div>
-
-                  </motion.div>
-                </AnimatePresence>
-             </div>
-
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
-
         </div>
       </div>
     </section>
@@ -187,7 +181,6 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      
       <section className="relative w-full h-[50vh] md:h-[60vh] min-h-[450px] bg-gray-900 overflow-hidden">
         <div className="absolute inset-0 w-full h-full">
           <AnimatePresence mode="wait">
@@ -199,7 +192,6 @@ export default function HomePage() {
               transition={{ duration: 1.2 }}
               className="absolute inset-0 w-full h-full"
             >
-              
               <img
                 src={HERO_IMAGES[currentImageIndex]}
                 alt={`Hero Banner ${currentImageIndex + 1}`}
@@ -214,9 +206,8 @@ export default function HomePage() {
           {HERO_IMAGES.map((_, index) => (
             <motion.button
               key={index}
-              className={`h-2 rounded-full transition-all ${
-                index === currentImageIndex ? 'bg-white w-8' : 'bg-white/40 w-2'
-              }`}
+              className={`h-2 rounded-full transition-all ${index === currentImageIndex ? 'bg-white w-8' : 'bg-white/40 w-2'
+                }`}
               disabled
             />
           ))}
@@ -299,14 +290,13 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
       <section className="py-20 bg-slate-50 relative overflow-hidden">
-        
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-100/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
@@ -316,12 +306,12 @@ export default function HomePage() {
                 <span className="w-2 h-2 rounded-full bg-blue-600"></span>
                 Who We Are
               </div>
-              
+
               <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-6 leading-tight">
                 Global Heritage, <br />
                 <span className="text-blue-600">Local Excellence.</span>
               </h2>
-              
+
               <p className="text-lg text-slate-600 mb-6 leading-relaxed">
                 Meiden T&D India Limited is a <span className="font-bold text-slate-900">wholly owned subsidiary</span> of Meidensha Corporation, Japan. We bridge a century of Japanese engineering precision with India's manufacturing prowess.
               </p>
@@ -341,10 +331,8 @@ export default function HomePage() {
               </div>
             </motion.div>
 
-
             <div className="grid gap-6">
-              
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -365,7 +353,7 @@ export default function HomePage() {
                 </div>
               </motion.div>
 
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -385,15 +373,12 @@ export default function HomePage() {
                   </div>
                 </div>
               </motion.div>
-
             </div>
-
           </div>
         </div>
       </section>
 
       <ProductScrollSection />
-
     </div>
   );
 }
