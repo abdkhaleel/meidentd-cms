@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Section } from '@prisma/client';
-import { promises as fs } from 'fs';
+import { del } from '@vercel/blob';
 import path from 'path';
 
 type SectionWithChildren = Section & { children: SectionWithChildren[] };
@@ -86,48 +86,32 @@ export async function DELETE(request: Request) {
         const pathSegments = url.pathname.split('/');
         const slug = pathSegments.pop();
         
-        if (!slug) {
-            return NextResponse.json(
-                { error: 'Slug is missing from the URL' },
-                { status: 400 }
-            );
-        }
+        if (!slug) return NextResponse.json({ error: 'Slug missing' }, { status: 400 });
 
-        const page = await prisma.page.findUnique({
-            where: { slug }
-        });
+        const page = await prisma.page.findUnique({ where: { slug } });
 
-        if (!page) {
-            return NextResponse.json({ error: 'Page not found' }, { status: 404 });
-        }
+        if (!page) return NextResponse.json({ error: 'Page not found' }, { status: 404 });
 
         const imagesToDelete = await prisma.image.findMany({
-            where: {
-                section: {
-                    pageId: page.id
-                }
-            }
+            where: { section: { pageId: page.id } },
+            select: { url: true } 
         });
 
         const documentsToDelete = await prisma.document.findMany({
-            where: { section: { pageId: page.id } }
+            where: { section: { pageId: page.id } },
+            select: { url: true }
         });
 
-        for (const img of imagesToDelete) {
-            try {
-                const filePath = path.join(process.cwd(), 'public', img.url);
-                await fs.unlink(filePath);
-            } catch (err) {
-                console.warn(`Could not delete file: ${img.url}`, err);
-            }
-        }
+        const allUrlsToDelete = [
+            ...imagesToDelete.map(img => img.url),
+            ...documentsToDelete.map(doc => doc.url)
+        ];
 
-        for (const doc of documentsToDelete) {
+        if (allUrlsToDelete.length > 0) {
             try {
-                const filePath = path.join(process.cwd(), 'public', doc.url);
-                await fs.unlink(filePath);
+                await del(allUrlsToDelete);
             } catch (err) {
-                console.warn(`Could not delete document file: ${doc.url}`, err);
+                console.warn('Error deleting files from Blob storage', err);
             }
         }
 
@@ -139,9 +123,6 @@ export async function DELETE(request: Request) {
 
     } catch (error) {
         console.error('Error deleting page:', error);
-        return NextResponse.json(
-            { error: 'Failed to delete page' },
-            { status: 500 },
-        );
+        return NextResponse.json({ error: 'Failed to delete page' }, { status: 500 });
     }
 }

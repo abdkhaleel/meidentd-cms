@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { promises as fs } from 'fs';
+import { del } from '@vercel/blob';
 import path from 'path';
 
 async function getAllSectionIds(rootId: string): Promise<string[]> {
@@ -8,14 +8,11 @@ async function getAllSectionIds(rootId: string): Promise<string[]> {
         where: { parentId: rootId },
         select: { id: true }
     });
-
     let ids = [rootId]; 
-    
     for (const section of sections) {
         const descendantIds = await getAllSectionIds(section.id);
         ids = [...ids, ...descendantIds];
     }
-    
     return ids;
 }
 
@@ -114,40 +111,30 @@ export async function DELETE(request: Request) {
         const url = new URL(request.url);
         const id = url.pathname.split('/').pop();
         
-        if (!id) {
-            return NextResponse.json(
-                { error: 'Section ID is missing from the URL' },
-                { status: 400 }
-            );
-        }
+        if (!id) return NextResponse.json({ error: 'ID missing' }, { status: 400 });
 
         const allSectionIds = await getAllSectionIds(id);
 
         const imagesToDelete = await prisma.image.findMany({
-            where: {
-                sectionId: { in: allSectionIds }
-            }
+            where: { sectionId: { in: allSectionIds } },
+            select: { url: true }
         });
 
         const documentsToDelete = await prisma.document.findMany({
-            where: { sectionId: { in: allSectionIds } }
+            where: { sectionId: { in: allSectionIds } },
+            select: { url: true }
         });
 
-        for (const img of imagesToDelete) {
-            try {
-                const filePath = path.join(process.cwd(), 'public', img.url);
-                await fs.unlink(filePath);
-            } catch (err) {
-                console.warn(`Could not delete file: ${img.url}`, err);
-            }
-        }
+        const allUrlsToDelete = [
+            ...imagesToDelete.map(i => i.url),
+            ...documentsToDelete.map(d => d.url)
+        ];
 
-        for (const doc of documentsToDelete) {
-            try {
-                const filePath = path.join(process.cwd(), 'public', doc.url);
-                await fs.unlink(filePath);
+        if (allUrlsToDelete.length > 0) {
+             try {
+                await del(allUrlsToDelete);
             } catch (err) {
-                console.warn(`Could not delete document file: ${doc.url}`, err);
+                console.warn('Error deleting files from Blob storage', err);
             }
         }
 
@@ -159,13 +146,9 @@ export async function DELETE(request: Request) {
     }
     catch (error) {
         console.error('Error deleting section:', error);
-        
         if ((error as any).code === 'P2025') {
             return NextResponse.json({ error: 'Section not found' }, { status: 404 });
         }
-        return NextResponse.json(
-            { error: 'Failed to delete section' },
-            { status: 500 },
-        );
+        return NextResponse.json({ error: 'Failed to delete section' }, { status: 500 });
     }
 }

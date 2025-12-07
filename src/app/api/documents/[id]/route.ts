@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { promises as fs } from 'fs';
+import { del } from '@vercel/blob';
 import path from 'path';
 
 export async function DELETE(
@@ -11,9 +11,7 @@ export async function DELETE(
     const url = new URL(request.url);
     const documentId = url.pathname.split('/').pop();
 
-    if (!documentId) {
-      return NextResponse.json({ error: 'Document ID is missing' }, { status: 400 });
-    }
+    if (!documentId) return NextResponse.json({ error: 'ID missing' }, { status: 400 });
 
     const document = await prisma.document.findUnique({
       where: { id: documentId },
@@ -28,10 +26,11 @@ export async function DELETE(
     });
 
     try {
-      const filePath = path.join(process.cwd(), 'public', document.url);
-      await fs.unlink(filePath);
+      if (document.url) {
+        await del(document.url);
+      }
     } catch (fileError) {
-      console.warn(`Failed to delete document file, but DB record was removed: ${fileError}`);
+      console.warn(`Failed to delete blob file: ${fileError}`);
     }
 
     return new NextResponse(null, { status: 204 });

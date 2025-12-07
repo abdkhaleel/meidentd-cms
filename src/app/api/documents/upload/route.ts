@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
+import { put } from '@vercel/blob';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '@/lib/prisma';
@@ -18,23 +18,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Section ID is missing' }, { status: 400 });
     }
 
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'documents');
-    
-    try {
-      await fs.mkdir(uploadDir, { recursive: true });
-    } catch (error) {
-        console.error('Error creating upload directory:', error);
-    }
-
     const uniqueFilename = `${uuidv4()}${path.extname(file.name)}`;
-    const filePath = path.join(uploadDir, uniqueFilename);
-    const buffer = Buffer.from(await file.arrayBuffer());
-
-    await fs.writeFile(filePath, buffer);
+    
+    const blob = await put(`documents/${uniqueFilename}`, file, {
+      access: 'public',
+    });
 
     const newDocument = await prisma.document.create({
       data: {
-        url: `/uploads/documents/${uniqueFilename}`,
+        url: blob.url, 
         filename: file.name,
         title: file.name,
         fileSize: file.size,

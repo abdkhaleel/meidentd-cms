@@ -1,8 +1,6 @@
-// src/app/api/images/[id]/route.ts
-
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { promises as fs } from 'fs';
+import { del } from '@vercel/blob';
 import path from 'path';
 
 export async function DELETE(
@@ -13,9 +11,7 @@ export async function DELETE(
     const url = new URL(request.url);
     const imageId = url.pathname.split('/').pop();
 
-    if (!imageId) {
-      return NextResponse.json({ error: 'Image ID is missing' }, { status: 400 });
-    }
+    if (!imageId) return NextResponse.json({ error: 'ID missing' }, { status: 400 });
 
     const image = await prisma.image.findUnique({
       where: { id: imageId },
@@ -30,23 +26,18 @@ export async function DELETE(
     });
 
     try {
-      const filePath = path.join(process.cwd(), 'public', image.url);
-      await fs.unlink(filePath);
+        if(image.url) {
+            await del(image.url);
+        }
     } catch (fileError) {
-      console.error(`Failed to delete image file, but DB record was removed: ${fileError}`);
+      console.error(`Failed to delete blob file: ${fileError}`);
     }
 
     return new NextResponse(null, { status: 204 });
 
   } catch (error) {
     console.error('Error deleting image:', error);
-    if ((error as any).code === 'P2025') {
-        return NextResponse.json({ error: 'Image not found' }, { status: 404 });
-    }
-    return NextResponse.json(
-      { error: 'Failed to delete image' },
-      { status: 500 }
-    );
+    return NextResponse.json( { error: 'Failed to delete image' }, { status: 500 });
   }
 }
 
