@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, Loader2 } from 'lucide-react';
@@ -27,18 +27,8 @@ export default function Header() {
   const [loading, setLoading] = useState(true);
   
   const pathname = usePathname();
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        const desktopDropdown = document.getElementById('desktop-more-dropdown');
-        if (desktopDropdown) desktopDropdown.style.opacity = '0';
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  // REMOVED: The useEffect and useRef that manipulated opacity directly were causing the bug.
 
   useEffect(() => {
     async function fetchPages() {
@@ -96,13 +86,13 @@ export default function Header() {
           ))}
 
           {dynamicPages.length > 0 && (
-            <div className="relative group ml-1" ref={dropdownRef}>
+            <div className="relative group ml-1">
               <button className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:text-brand-primary hover:bg-gray-50 transition-all">
                 More <ChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-200" />
               </button>
 
+              {/* Removed ID, relying purely on group-hover CSS */}
               <div 
-                id="desktop-more-dropdown"
                 className="absolute right-0 top-full pt-2 w-56 opacity-0 translate-y-2 invisible group-hover:opacity-100 group-hover:translate-y-0 group-hover:visible transition-all duration-200 ease-out"
               >
                 <div className="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden p-1.5">
@@ -133,6 +123,7 @@ export default function Header() {
           )}
         </nav>
 
+        {/* Mobile Menu Button */}
         <div className="lg:hidden">
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -152,6 +143,7 @@ export default function Header() {
         </div>
       </div>
 
+      {/* Mobile Menu Content */}
       <div 
         className={`
           lg:hidden absolute top-[70px] left-0 w-full bg-white border-b border-gray-100 shadow-xl 

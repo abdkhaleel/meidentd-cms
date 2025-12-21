@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import defaultTheme from "tailwindcss/defaultTheme";
 
 const config: Config = {
   content: [
@@ -9,27 +10,28 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Derived from your CSS analysis
         brand: {
-          primary: '#113388',   // .blue-title, .active-nav, headings
-          secondary: '#113366', // .sitesearch-button, .pages-sidebar-header
-          bright: '#435dd0',    // .top-navbar border
-          deep: '#1b4e8c',      // Hover states
-          orange: '#ee7000',    // .news-release-notice-orange
-          blue: '#0066a6',      // .news-release-notice-blue
+          primary: '#113388',
+          secondary: '#113366',
+          bright: '#435dd0',
+          deep: '#1b4e8c',
+          orange: '#ee7000',
+          blue: '#0066a6',
         },
         gray: {
-          body: '#333333',      // Default text
-          secondary: '#555555', // Nav links
-          muted: '#777777',     // Breadcrumbs
-          light: '#eeeeee',     // Backgrounds/Inputs
-          border: '#cccccc',    // Borders
-          hover: '#f2f4f7',     // Row hovers
+          body: '#333333',
+          secondary: '#555555',
+          muted: '#777777',
+          light: '#eeeeee',
+          border: '#cccccc',
+          hover: '#f2f4f7',
         }
       },
       fontFamily: {
-        // Matches body { font-family: Verdana, Arial, sans-serif; }
-        sans: ['Verdana', 'Arial', 'sans-serif'],
+        // Access defaults via defaultTheme.fontFamily
+        sans: ["var(--font-body)", ...defaultTheme.fontFamily.sans],
+        display: ["var(--font-display)", ...defaultTheme.fontFamily.sans],
+        mono: ["var(--font-mono)", ...defaultTheme.fontFamily.mono],
       },
       container: {
         center: true,
@@ -41,16 +43,15 @@ const config: Config = {
         screens: {
           sm: '640px',
           md: '768px',
-          lg: '980px',  // Matches your original .container max-width
-          xl: '1280px', // Matches your .slider-container max-width
-          '2xl': '1280px', // Cap max width to prevent it getting too stretched
+          lg: '980px',
+          xl: '1280px',
+          '2xl': '1280px',
         },
       },
-      // Modernizing the "15px" requirement by extending spacing slightly
       fontSize: {
-        base: ['15px', { lineHeight: '1.75' }], // Your specific base requirements
+        base: ['15px', { lineHeight: '1.75' }],
         lg: ['18px', { lineHeight: '1.75' }],
-        xl: ['24px', { lineHeight: '1.5' }],    // For sub-page titles
+        xl: ['24px', { lineHeight: '1.5' }],
       },
     },
   },
