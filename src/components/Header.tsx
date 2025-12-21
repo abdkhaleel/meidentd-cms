@@ -90,7 +90,7 @@ export default function Header() {
             >
               {link.name}
               {isActive(link.href) && (
-                <span className="absolute bottom-0 left-3 right-3 h-[2px] bg-brand-primary rounded-full" />
+                <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-brand-primary rounded-full" />
               )}
             </Link>
           ))}
