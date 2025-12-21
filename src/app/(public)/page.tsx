@@ -247,7 +247,7 @@ export default function HomePage() {
                 Explore Solutions
                 <ChevronRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link href='/contact' className="px-6 sm:px-8 py-3 rounded font-bold text-white border-2 border-white/50 hover:border-white transition-all duration-300 text-center">
+              <Link href='/contact-us' className="px-6 sm:px-8 py-3 rounded font-bold text-white border-2 border-white/50 hover:border-white transition-all duration-300 text-center">
                 Contact Us
               </Link>
             </div>
