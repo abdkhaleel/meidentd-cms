@@ -1,69 +1,139 @@
 @import "tailwindcss";
-/* 👇 ADD THIS LINE HERE */
-@plugin "@tailwindcss/typography"; 
 
+/* 
+  1. PLUGINS
+  In v4, plugins are imported directly in CSS via @plugin 
+*/
+@plugin "@tailwindcss/typography";
+
+/* 
+  2. THEME CONFIGURATION
+  Tailwind v4 detects CSS variables in @theme and automatically 
+  creates utilities (e.g., --color-brand-primary creates text-brand-primary).
+*/
 @theme {
-  --font-sans: Verdana, Arial, sans-serif;
-  
+  /* Typography System (Matches the React Components) */
+  --font-display: "Manrope", "Verdana", sans-serif;
+  --font-sans: "Inter", "Arial", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Brand Palette - Semantic Naming */
   --color-brand-primary: #113388;
   --color-brand-secondary: #113366;
   --color-brand-bright: #435dd0;
-  --color-brand-orange: #ee7000; /* Added based on your config */
-  --color-brand-blue: #0066a6;   /* Added based on your config */
+  --color-brand-deep: #0a2558;   /* Added for gradients/hovers */
   
-  --color-gray-body: #333333;
-  --color-gray-secondary: #555555;
-  --color-gray-muted: #777777;
-  --color-gray-light: #eeeeee;
-  --color-gray-border: #cccccc;
-  --color-gray-hover: #f2f4f7;
+  /* Accent Colors */
+  --color-brand-orange: #ee7000;
+  --color-brand-blue: #0066a6;
+
+  /* Neutral Scale (mapped to Slate-like tones for professional UI) */
+  --color-gray-body: #334155;    /* Slate-700 */
+  --color-gray-secondary: #64748b; /* Slate-500 */
+  --color-gray-muted: #94a3b8;   /* Slate-400 */
+  --color-gray-light: #f8fafc;   /* Slate-50 */
+  --color-gray-border: #e2e8f0;  /* Slate-200 */
+  --color-gray-hover: #f1f5f9;   /* Slate-100 */
 }
 
+/* 
+  3. BASE STYLES
+  Global defaults for consistent rendering across browsers.
+*/
 @layer base {
+  :root {
+    /* Smooth scrolling for anchor links */
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-white text-gray-body font-sans antialiased;
-    font-size: 15px; 
+    font-size: 15px;
     line-height: 1.75;
+    text-rendering: optimizeLegibility; /* Professional font rendering */
   }
 
+  /* Typography Defaults */
   h1, h2, h3, h4, h5, h6 {
-    @apply text-brand-primary font-bold;
-    line-height: 1.4; 
+    @apply font-display font-bold text-brand-primary tracking-tight;
+    line-height: 1.2;
   }
 
-  h1 { @apply text-3xl mb-6; }
-  h2 { @apply text-2xl mb-4; }
-  h3 { @apply text-xl mb-3; }
+  h1 { @apply text-3xl md:text-4xl lg:text-5xl mb-6; }
+  h2 { @apply text-2xl md:text-3xl mb-4; }
+  h3 { @apply text-xl md:text-2xl mb-3; }
   
   a {
-    @apply transition-colors duration-200;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+
+  /* Custom Scrollbar for Webkit (Chrome/Safari/Edge) */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-colors;
   }
 }
 
-/* Component Refinements */
+/* 
+  4. COMPONENT ABSTRACTIONS
+  Only use @apply for highly repetitive patterns that cannot be components.
+*/
 @layer components {
   
-  /* Now "prose" will be recognized because of the @plugin line above */
+  /* Professional Prose Configuration */
   .prose-brand {
     @apply prose prose-slate max-w-none;
-    @apply prose-headings:text-brand-primary;
-    @apply prose-a:text-brand-secondary prose-a:no-underline hover:prose-a:text-brand-primary;
-    @apply prose-p:leading-relaxed;
+    
+    /* Headings */
+    @apply prose-headings:font-display prose-headings:text-brand-primary prose-headings:font-bold;
+    
+    /* Links */
+    @apply prose-a:text-brand-primary prose-a:font-medium prose-a:no-underline 
+           hover:prose-a:text-brand-bright hover:prose-a:underline;
+    
+    /* Elements */
+    @apply prose-blockquote:border-l-brand-primary prose-blockquote:bg-gray-light prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:not-italic;
+    @apply prose-img:rounded-lg prose-img:shadow-md;
+    @apply prose-li:marker:text-brand-primary;
   }
 
+  /* Navigation Links */
   .nav-link {
-    @apply text-gray-secondary hover:text-brand-primary text-sm font-medium px-4 py-3 block border-b-2 border-transparent transition-all;
+    @apply text-gray-secondary text-sm font-medium px-4 py-3 block 
+           border-b-2 border-transparent transition-all duration-200
+           hover:text-brand-primary hover:bg-gray-hover;
   }
   
   .nav-link.active {
-    @apply border-brand-primary text-brand-primary;
+    @apply border-brand-primary text-brand-primary bg-brand-primary/5 font-bold;
   }
 
+  /* Sidebar Elements */
   .sidebar-header {
-    @apply bg-brand-secondary text-white text-center p-4 font-bold;
+    @apply bg-brand-secondary text-white text-center p-4 font-display font-bold tracking-wide uppercase text-sm;
   }
   
   .sidebar-item {
-    @apply block bg-gray-light p-3 text-sm text-gray-secondary border-b border-white hover:bg-[#d4dce9] hover:text-brand-primary transition-colors;
+    @apply block px-4 py-3 text-sm text-gray-secondary border-b border-white bg-gray-light
+           transition-all duration-200
+           hover:bg-blue-50 hover:text-brand-primary hover:pl-5;
   }
+}
+
+/* 
+  5. UTILITIES 
+  Custom utility classes for specific visual effects
+*/
+@utility glass-panel {
+  @apply bg-white/90 backdrop-blur-md border border-gray-border shadow-sm;
+}
+
+@utility text-balance {
+  text-wrap: balance;
 }

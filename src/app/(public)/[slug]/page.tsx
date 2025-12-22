@@ -132,9 +132,9 @@ function DeepNestedSection({ section }: { section: SectionData }) {
           >
             <div className="px-5 pb-5 md:px-6 md:pb-6 border-t border-slate-100 bg-slate-50/50">
               
-              {/* IMAGE UPDATE: Removed border wrapper, added subtle ring for definition */}
+              {/* FIX: Removed overflow-hidden wrapper so caption can be seen */}
               {section.images?.length > 0 && (
-                <div className="mb-6 rounded-sm overflow-hidden ring-1 ring-black/5 bg-white">
+                <div className="mb-6">
                    <ImageCarousel images={section.images} />
                 </div>
               )}
@@ -161,7 +161,7 @@ function DeepNestedSection({ section }: { section: SectionData }) {
   );
 }
 
-// 3. Feature Block (Alternating Grid)
+// 3. Feature Block
 function FeatureBlock({ section, index }: { section: SectionData; index: number }) {
   const isEven = index % 2 === 0;
   const hasImages = section.images && section.images.length > 0;
@@ -217,15 +217,9 @@ function FeatureBlock({ section, index }: { section: SectionData; index: number 
         {hasImages && (
           <div className="lg:w-1/2 w-full">
              <div className="sticky top-32">
-                 {/* IMAGE UPDATE: Removed shadow-2xl, border, background padding, and decorative corners */}
-                 <div className="relative rounded-sm overflow-hidden ring-1 ring-slate-900/5 bg-slate-50">
+                 {/* FIX: Removed overflow-hidden, borders, and duplicate captions */}
+                 <div className="relative">
                     <ImageCarousel images={section.images} />
-                 </div>
-                 
-                 <div className="mt-3 flex items-center justify-between px-1">
-                     <span className="font-mono text-[10px] text-slate-400 uppercase tracking-widest">
-                        Fig {index + 1}.0 - Visual Reference
-                     </span>
                  </div>
              </div>
           </div>
@@ -235,7 +229,7 @@ function FeatureBlock({ section, index }: { section: SectionData; index: number 
   );
 }
 
-// 4. Root Section (Top Level)
+// 4. Root Section
 function RootSection({ section, index }: { section: SectionData; index: number }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -245,7 +239,7 @@ function RootSection({ section, index }: { section: SectionData; index: number }
       ref={ref}
       className="mb-32 scroll-mt-32"
     >
-      {/* Sticky Header for Section */}
+      {/* Sticky Header */}
       <div className="sticky top-[70px] z-30 bg-white/95 backdrop-blur-md py-6 border-b border-slate-200 mb-10 transition-all">
         <div className="flex items-center gap-4">
             <span className="flex items-center justify-center w-8 h-8 bg-slate-900 text-white font-mono text-sm font-bold rounded-sm shadow-md">
@@ -259,12 +253,13 @@ function RootSection({ section, index }: { section: SectionData; index: number }
 
       <div className="mb-16">
         {section.images && section.images.length > 0 && (
-          // IMAGE UPDATE: Replaced shadow/border container with clean aspect-ratio container
+          // FIX: Removed 'overflow-hidden' and 'aspect-video'
+          // This allows the ImageCarousel to expand naturally and show its caption
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-10 rounded-sm overflow-hidden ring-1 ring-slate-900/5 aspect-video md:aspect-21/9 relative bg-slate-50"
+            className="mb-10 w-full" 
           >
              <ImageCarousel images={section.images} />
           </motion.div>
@@ -319,7 +314,6 @@ export default function DynamicPage() {
   // 2. Scroll Spy Logic
   useEffect(() => {
     const handleScroll = () => {
-      // Offset for header height
       const scrollPosition = window.scrollY + 250; 
       
       if(page?.sections) {
@@ -342,13 +336,12 @@ export default function DynamicPage() {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
-      const yOffset = -150; // Adjusted offset for sticky headers
+      const yOffset = -150; 
       const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
   };
 
-  // 3. Loading State
   if (loading) return (
     <div className="h-screen bg-slate-50 flex flex-col items-center justify-center">
       <div className="w-12 h-12 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
@@ -368,7 +361,6 @@ export default function DynamicPage() {
       
       {/* HERO SECTION */}
       <div className="bg-slate-950 text-white py-20 md:py-32 relative overflow-hidden">
-         {/* Technical Background */}
          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05]"></div>
          <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
          <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-transparent to-transparent"></div>
@@ -395,7 +387,7 @@ export default function DynamicPage() {
 
       <div className="container mx-auto px-6 py-16 flex flex-col lg:flex-row gap-16 max-w-7xl">
         
-        {/* SIDEBAR NAVIGATION (Sticky) */}
+        {/* SIDEBAR NAVIGATION */}
         <aside className="hidden lg:block w-72 shrink-0">
           <div className="sticky top-[100px]">
             <div className="bg-white rounded-sm border border-slate-200 shadow-xl shadow-slate-200/50 p-6">
@@ -404,9 +396,7 @@ export default function DynamicPage() {
               </h3>
               
               <nav className="relative">
-                {/* Vertical Line */}
                 <div className="absolute left-[11px] top-2 bottom-2 w-px bg-slate-100" />
-                
                 <ul className="space-y-4">
                     {page.sections.map((section, idx) => (
                     <li key={section.id} className="relative z-10">

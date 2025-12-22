@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight, Info, Maximize2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export type ImageData = {
@@ -20,7 +20,15 @@ export default function ImageCarousel({ images }: { images: ImageData[] }) {
 
   const currentImage = images[currentIndex];
   const isMulti = images.length > 1;
-  const hasInfo = Boolean(currentImage.caption || currentImage.altText);
+
+  // LOGIC UPDATE:
+  // 1. Trim strings to ensure empty whitespace doesn't trigger the UI
+  // 2. Remove the || `Figure...` fallback
+  const displayCaption = currentImage.caption?.trim();
+  const displayLabel = currentImage.altText?.trim();
+  
+  // Only show info if actual content exists
+  const hasInfo = Boolean(displayCaption || displayLabel);
 
   const prevSlide = () => {
     setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -33,10 +41,9 @@ export default function ImageCarousel({ images }: { images: ImageData[] }) {
   return (
     <figure className="w-full mb-10 group relative">
       
-      {/* IMAGE CONTAINER: Flush, Technical, No Shadow */}
+      {/* IMAGE CONTAINER */}
       <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] bg-slate-50/50 rounded-sm overflow-hidden ring-1 ring-slate-900/5">
         
-        {/* Subtle grid pattern for engineering feel */}
         <div className="absolute inset-0 opacity-[0.03]" 
              style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '20px 20px' }} 
         />
@@ -52,7 +59,8 @@ export default function ImageCarousel({ images }: { images: ImageData[] }) {
           >
             <Image
               src={currentImage.url}
-              alt={currentImage.altText}
+              // Fallback to empty string for accessibility if no alt text is provided
+              alt={displayLabel || ""} 
               fill
               className="object-contain p-4 md:p-8"
               priority={currentIndex === 0}
@@ -61,11 +69,9 @@ export default function ImageCarousel({ images }: { images: ImageData[] }) {
           </motion.div>
         </AnimatePresence>
 
-        {/* CONTROLS: Minimalist & Flush */}
         {isMulti && (
           <>
-            {/* Arrows - Only visible on hover */}
-            <div className="absolute inset-y-0 left-0 flex items-center pl-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
                 <button 
                 onClick={(e) => { e.stopPropagation(); prevSlide(); }}
                 className="bg-white/80 hover:bg-blue-600 hover:text-white text-slate-700 p-2 rounded-sm backdrop-blur-sm transition-colors"
@@ -75,7 +81,7 @@ export default function ImageCarousel({ images }: { images: ImageData[] }) {
                 </button>
             </div>
             
-            <div className="absolute inset-y-0 right-0 flex items-center pr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="absolute inset-y-0 right-0 flex items-center pr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
                 <button 
                 onClick={(e) => { e.stopPropagation(); nextSlide(); }}
                 className="bg-white/80 hover:bg-blue-600 hover:text-white text-slate-700 p-2 rounded-sm backdrop-blur-sm transition-colors"
@@ -85,8 +91,7 @@ export default function ImageCarousel({ images }: { images: ImageData[] }) {
                 </button>
             </div>
 
-            {/* Pagination Dots - Technical Rectangle Style */}
-            <div className="absolute bottom-0 left-0 w-full flex justify-center pb-4">
+            <div className="absolute bottom-0 left-0 w-full flex justify-center pb-4 z-10">
                <div className="flex space-x-1 p-1 bg-slate-100/50 backdrop-blur-md rounded-sm">
                 {images.map((_, idx) => (
                     <button
@@ -102,11 +107,11 @@ export default function ImageCarousel({ images }: { images: ImageData[] }) {
           </>
         )}
         
-        {/* Toggle Caption Button (Top Right) */}
+        {/* Toggle Button: Only render if content exists */}
         {hasInfo && (
           <button
             onClick={() => setShowCaption(!showCaption)}
-            className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-blue-600 transition-colors opacity-0 group-hover:opacity-100"
+            className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-blue-600 transition-colors opacity-0 group-hover:opacity-100 z-20"
             title="Toggle details"
           >
             <Info className="w-4 h-4" />
@@ -114,26 +119,28 @@ export default function ImageCarousel({ images }: { images: ImageData[] }) {
         )}
       </div>
 
-      {/* CAPTION: Separated, Technical Label Style */}
+      {/* CAPTION SECTION: Only render if content exists */}
       <AnimatePresence initial={false}>
         {hasInfo && showCaption && (
           <motion.figcaption
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
           >
-            <div className="pt-3 flex items-start gap-3 border-l-2 border-blue-500/30 pl-3 ml-1">
-               <div className="flex flex-col gap-1">
-                  {currentImage.caption && (
-                    <span className="font-sans text-sm text-slate-600 leading-relaxed">
-                       {currentImage.caption}
-                    </span>
-                  )}
-                  <span className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    {currentImage.altText || `Figure ${currentIndex + 1}.${0}`}
-                  </span>
-               </div>
+            <div className="pt-4 flex flex-col items-center justify-center text-center gap-1.5">
+               
+               {displayCaption && (
+                 <span className="font-sans text-sm font-bold text-slate-900 leading-relaxed max-w-2xl">
+                    {displayCaption}
+                 </span>
+               )}
+
+               {displayLabel && (
+                 <span className="font-mono text-[11px] font-extrabold text-slate-500 uppercase tracking-widest">
+                   {displayLabel}
+                 </span>
+               )}
+
             </div>
           </motion.figcaption>
         )}
