@@ -82,7 +82,7 @@ const SectionHeader = ({ title, subtitle, dark = false }: { title: string, subti
       viewport={{ once: true }}
       className="flex items-center gap-3 mb-4"
     >
-      <div className={`h-[2px] w-8 ${dark ? 'bg-blue-400' : 'bg-blue-700'}`} />
+      <div className={`h-0.5 w-8 ${dark ? 'bg-blue-400' : 'bg-blue-700'}`} />
       {/* MONO FONT for labels */}
       <span className={`font-mono text-xs font-bold tracking-[0.2em] uppercase ${dark ? 'text-blue-200' : 'text-blue-800'}`}>
         {subtitle}
@@ -119,8 +119,8 @@ function ProductScrollSection() {
       <div className="sticky top-0 h-screen overflow-hidden flex flex-col">
         {/* Abstract Technical Background */}
         <div className="absolute inset-0">
-            <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-900/10 to-transparent" />
-            <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent" />
+            <div className="absolute top-0 right-0 w-1/2 h-full bg-linear-to-l from-blue-900/10 to-transparent" />
+            <div className="absolute bottom-0 left-0 w-full h-1/2 bg-linear-to-t from-black to-transparent" />
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03]"></div>
             <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '100px 100px' }}></div>
         </div>
@@ -150,7 +150,7 @@ function ProductScrollSection() {
                             {prod.name}
                           </h3>
                         </div>
-                        <div className={`h-[1px] bg-blue-500 transition-all duration-500 ${idx === activeIndex ? 'w-full max-w-[200px]' : 'w-0'}`} />
+                        <div className={`h-px bg-blue-500 transition-all duration-500 ${idx === activeIndex ? 'w-full max-w-[200px]' : 'w-0'}`} />
                       </button>
                     ))}
                 </div>
@@ -167,7 +167,7 @@ function ProductScrollSection() {
                             className="relative w-full max-w-2xl"
                         >
                             {/* Decorative Technical Number */}
-                            <div className="absolute -top-24 -left-12 text-[12rem] font-bold text-white/[0.02] select-none font-mono tracking-tighter">
+                            <div className="absolute -top-24 -left-12 text-[12rem] font-bold text-white/2 select-none font-mono tracking-tighter">
                                 {PRODUCTS[activeIndex].letter}
                             </div>
 
@@ -229,7 +229,7 @@ function HeroSection() {
                             alt="Industrial Engineering" 
                             className="w-full h-full object-cover opacity-60" 
                         />
-                        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/40 to-transparent" />
+                        <div className="absolute inset-0 bg-linear-to-r from-slate-950/90 via-slate-950/40 to-transparent" />
                         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05]" />
                     </motion.div>
                 </AnimatePresence>
@@ -244,7 +244,7 @@ function HeroSection() {
                     className="max-w-5xl"
                 >
                     <div className="flex items-center gap-4 mb-8">
-                        <span className="h-[1px] w-12 bg-blue-500" />
+                        <span className="h-px w-12 bg-blue-500" />
                         {/* MONO for dates/labels */}
                         <span className="font-mono text-sm font-bold tracking-[0.2em] text-blue-400 uppercase">
                             Since 1897
@@ -253,7 +253,7 @@ function HeroSection() {
 
                     <h1 className="font-display text-6xl md:text-7xl lg:text-8xl font-bold text-white tracking-tight leading-[1.05] mb-8">
                         Engineering <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
+                        <span className="text-transparent bg-clip-text bg-linear-to-r from-white to-slate-400">
                             The Future Grid.
                         </span>
                     </h1>

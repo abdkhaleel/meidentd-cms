@@ -3,15 +3,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, LayoutGrid, FileText, Download, ExternalLink, Paperclip } from 'lucide-react';
+import { ChevronDown, LayoutGrid, FileText, ExternalLink, Paperclip, Hash, ArrowRight } from 'lucide-react';
 import ImageCarousel from '@/components/ImageCarousel';
-import { type ClassValue, clsx } from "clsx";
+import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+// --- UTILS ---
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// --- TYPES ---
 export type ImageData = {
   id: string;
   url: string;
@@ -42,42 +44,47 @@ type PageData = {
   sections: SectionData[];
 };
 
+// --- SUB-COMPONENTS ---
+
+// 1. Documents Component
 function SectionDocuments({ docs }: { docs: DocumentData[] }) {
   if (!docs || docs.length === 0) return null;
 
   return (
-    <div className="mt-8 mb-6">
-      <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
-        <Paperclip size={16} className="text-brand-primary" />
-        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-          Attached Documents
+    <div className="mt-8 mb-6 pt-6 border-t border-slate-100">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="flex items-center justify-center w-5 h-5 bg-slate-100 rounded-sm">
+             <Paperclip size={12} className="text-slate-500" />
+        </span>
+        <h4 className="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+          Technical Documentation
         </h4>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {docs.map((doc) => (
           <a 
             key={doc.id}
             href={doc.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-brand-primary/50 hover:shadow-md transition-all duration-200"
+            className="group relative flex flex-col p-4 bg-slate-50 border border-slate-200 rounded-sm hover:bg-white hover:border-blue-400 hover:shadow-lg hover:shadow-blue-900/5 transition-all duration-300"
           >
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-md group-hover:bg-blue-600 group-hover:text-white transition-colors">
-              <FileText size={20} />
+            <div className="flex items-start justify-between mb-3">
+                 <div className="p-2 bg-white border border-slate-200 rounded-sm group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                     <FileText size={18} />
+                 </div>
+                 <ExternalLink size={14} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-700 truncate group-hover:text-brand-primary transition-colors">
-                {doc.title || doc.filename}
-              </p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] text-gray-400 font-mono bg-gray-100 px-1.5 py-0.5 rounded">
-                  {doc.filename.split('.').pop()?.toUpperCase() || 'FILE'}
-                </span>
-                <span className="text-[10px] text-gray-400 flex items-center gap-1 group-hover:text-brand-secondary transition-colors">
-                  View File <ExternalLink size={10} />
-                </span>
-              </div>
+            
+            <p className="font-sans font-medium text-slate-800 text-sm mb-1 line-clamp-2">
+               {doc.title || doc.filename}
+            </p>
+            
+            <div className="mt-auto pt-2 flex items-center gap-2">
+                 <span className="font-mono text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-sm uppercase">
+                    {doc.filename.split('.').pop() || 'FILE'}
+                 </span>
             </div>
           </a>
         ))}
@@ -86,22 +93,31 @@ function SectionDocuments({ docs }: { docs: DocumentData[] }) {
   );
 }
 
+// 2. Nested Accordion
 function DeepNestedSection({ section }: { section: SectionData }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="mt-4 border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
+    <div className="mt-4 border border-slate-200 rounded-sm bg-white hover:border-blue-300 transition-colors">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-blue-50 transition-colors text-left"
+        className="w-full flex items-center justify-between p-4 md:p-5 text-left group"
       >
-        <span className="font-bold text-brand-secondary text-sm md:text-base flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-primary"></span>
-          {section.title}
-        </span>
+        <div className="flex items-center gap-3">
+            <span className={cn(
+                "w-1.5 h-1.5 rounded-full transition-colors",
+                isOpen ? "bg-blue-600" : "bg-slate-300 group-hover:bg-blue-400"
+            )} />
+            <span className={cn(
+                "font-display font-bold text-slate-800 text-sm md:text-base transition-colors",
+                isOpen ? "text-blue-800" : "group-hover:text-blue-700"
+            )}>
+                {section.title}
+            </span>
+        </div>
         <ChevronDown 
-          size={18} 
-          className={cn("text-gray-400 transition-transform duration-300", isOpen && "rotate-180 text-brand-primary")} 
+          size={16} 
+          className={cn("text-slate-400 transition-transform duration-300", isOpen && "rotate-180 text-blue-600")} 
         />
       </button>
 
@@ -111,25 +127,27 @@ function DeepNestedSection({ section }: { section: SectionData }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="p-5 border-t border-gray-100">
+            <div className="px-5 pb-5 md:px-6 md:pb-6 border-t border-slate-100 bg-slate-50/50">
+              
+              {/* IMAGE UPDATE: Removed border wrapper, added subtle ring for definition */}
               {section.images?.length > 0 && (
-                <div className="mb-6 w-full">
+                <div className="mb-6 rounded-sm overflow-hidden ring-1 ring-black/5 bg-white">
                    <ImageCarousel images={section.images} />
                 </div>
               )}
               
               <div 
-                className="prose-brand prose-sm text-gray-600"
+                className="prose prose-sm prose-slate max-w-none text-slate-600 font-sans"
                 dangerouslySetInnerHTML={{ __html: section.content }}
               />
 
               <SectionDocuments docs={section.documents} />
 
               {section.children?.length > 0 && (
-                <div className="pl-4 mt-4 border-l-2 border-gray-100 space-y-2">
+                <div className="mt-6 space-y-2 pl-4 border-l border-slate-200">
                   {section.children.map(child => (
                     <DeepNestedSection key={child.id} section={child} />
                   ))}
@@ -143,63 +161,73 @@ function DeepNestedSection({ section }: { section: SectionData }) {
   );
 }
 
+// 3. Feature Block (Alternating Grid)
 function FeatureBlock({ section, index }: { section: SectionData; index: number }) {
   const isEven = index % 2 === 0;
   const hasImages = section.images && section.images.length > 0;
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 40 }}
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.6, delay: 0.1 }}
-      className="group relative py-12 md:py-20 border-b border-gray-100 last:border-0"
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.6 }}
+      className="py-16 md:py-24 border-b border-dashed border-slate-200 last:border-0"
     >
       <div className={cn(
-        "flex flex-col gap-10",
+        "flex flex-col gap-12 lg:gap-16",
         hasImages ? (isEven ? "lg:flex-row" : "lg:flex-row-reverse") : "lg:flex-col"
       )}>
         
+        {/* Content Column */}
         <div className={cn("flex-1 min-w-0", hasImages ? "lg:w-1/2" : "w-full")}>
-          <div className="flex items-center gap-2 mb-4 opacity-60">
-             <LayoutGrid size={16} className="text-brand-primary" />
-             <span className="text-xs font-bold tracking-widest text-brand-primary uppercase">Topic 0{index + 1}</span>
+          <div className="flex items-center gap-3 mb-6">
+             <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-sm uppercase tracking-wider">
+                Specification 0{index + 1}
+             </span>
+             <div className="h-px flex-1 bg-slate-200"></div>
           </div>
           
-          <h3 className="text-2xl md:text-3xl font-bold text-brand-secondary mb-6 group-hover:text-brand-primary transition-colors">
+          <h3 className="font-display text-2xl md:text-3xl font-bold text-slate-900 mb-6 leading-tight">
             {section.title}
           </h3>
           
           <div 
-            className="prose-brand prose-lg text-gray-600 leading-relaxed"
+            className="prose prose-lg prose-slate text-slate-600 leading-relaxed max-w-none"
             dangerouslySetInnerHTML={{ __html: section.content }}
           />
 
           <SectionDocuments docs={section.documents} />
 
           {section.children && section.children.length > 0 && (
-            <div className="mt-8 space-y-3">
-              <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">In Detail</h4>
-              {section.children.map(child => (
-                <DeepNestedSection key={child.id} section={child} />
-              ))}
+            <div className="mt-10">
+              <h4 className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                 <Hash size={12} /> Detailed Breakdown
+              </h4>
+              <div className="space-y-3">
+                  {section.children.map(child => (
+                    <DeepNestedSection key={child.id} section={child} />
+                  ))}
+              </div>
             </div>
           )}
         </div>
 
+        {/* Image Column */}
         {hasImages && (
-          <div className="lg:w-1/2 relative w-full">
-             <div className={cn(
-               "relative rounded-xl overflow-hidden shadow-2xl border-4 border-white ring-1 ring-gray-100 bg-gray-100",
-               isEven ? "lg:rotate-1" : "lg:-rotate-1"
-             )}>
-               <ImageCarousel images={section.images} />
+          <div className="lg:w-1/2 w-full">
+             <div className="sticky top-32">
+                 {/* IMAGE UPDATE: Removed shadow-2xl, border, background padding, and decorative corners */}
+                 <div className="relative rounded-sm overflow-hidden ring-1 ring-slate-900/5 bg-slate-50">
+                    <ImageCarousel images={section.images} />
+                 </div>
+                 
+                 <div className="mt-3 flex items-center justify-between px-1">
+                     <span className="font-mono text-[10px] text-slate-400 uppercase tracking-widest">
+                        Fig {index + 1}.0 - Visual Reference
+                     </span>
+                 </div>
              </div>
-             
-             <div className={cn(
-               "absolute -bottom-6 -z-10 w-full h-full bg-brand-primary/5 rounded-xl",
-               isEven ? "-right-6" : "-left-6"
-             )}></div>
           </div>
         )}
       </div>
@@ -207,6 +235,7 @@ function FeatureBlock({ section, index }: { section: SectionData; index: number 
   );
 }
 
+// 4. Root Section (Top Level)
 function RootSection({ section, index }: { section: SectionData; index: number }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -214,53 +243,52 @@ function RootSection({ section, index }: { section: SectionData; index: number }
     <section 
       id={section.id} 
       ref={ref}
-      className="mb-24 scroll-mt-32"
+      className="mb-32 scroll-mt-32"
     >
-      <div className="sticky top-18 z-20 bg-white/90 backdrop-blur-md py-4 border-b border-brand-primary/10 mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center justify-center w-8 h-8 bg-brand-secondary text-white font-mono text-sm rounded-lg shadow-md">
-              {index + 1}
+      {/* Sticky Header for Section */}
+      <div className="sticky top-[70px] z-30 bg-white/95 backdrop-blur-md py-6 border-b border-slate-200 mb-10 transition-all">
+        <div className="flex items-center gap-4">
+            <span className="flex items-center justify-center w-8 h-8 bg-slate-900 text-white font-mono text-sm font-bold rounded-sm shadow-md">
+              {String(index + 1).padStart(2, '0')}
             </span>
-            <h2 className="text-2xl md:text-3xl font-extrabold text-brand-secondary tracking-tight">
+            <h2 className="font-display text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
               {section.title}
             </h2>
-          </div>
-          <div className="hidden md:block h-px flex-1 bg-gradient-to-r from-brand-primary/20 to-transparent ml-6"></div>
         </div>
       </div>
 
-      <div className="mb-12">
+      <div className="mb-16">
         {section.images && section.images.length > 0 && (
+          // IMAGE UPDATE: Replaced shadow/border container with clean aspect-ratio container
           <motion.div 
-            initial={{ scale: 0.95, opacity: 0 }}
-            whileInView={{ scale: 1, opacity: 1 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
-            className="mb-8 rounded-2xl overflow-hidden shadow-xl relative w-full bg-gray-50 border border-gray-100"
+            className="mb-10 rounded-sm overflow-hidden ring-1 ring-slate-900/5 aspect-video md:aspect-21/9 relative bg-slate-50"
           >
              <ImageCarousel images={section.images} />
           </motion.div>
         )}
         
         <div 
-          className="prose-brand prose-xl max-w-4xl text-gray-700 leading-loose"
+          className="prose prose-xl prose-slate max-w-4xl text-slate-700 leading-8 font-sans"
           dangerouslySetInnerHTML={{ __html: section.content }}
         />
 
         <SectionDocuments docs={section.documents} />
       </div>
 
-      <div className="pl-0 md:pl-4 border-l-2 border-dashed border-gray-200 space-y-8">
+      {/* Children Container */}
+      <div className="pl-0 md:pl-8 border-l border-slate-200 md:ml-4 space-y-8">
         {section.children && section.children.map((child, idx) => (
           <FeatureBlock key={child.id} section={child} index={idx} />
         ))}
       </div>
-
     </section>
   );
 }
 
+// --- MAIN PAGE COMPONENT ---
 export default function DynamicPage() {
   const params = useParams();
   const slug = params.slug as string;
@@ -269,6 +297,7 @@ export default function DynamicPage() {
   const [activeSectionId, setActiveSectionId] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
+  // 1. Fetch Data
   useEffect(() => {
     if (!slug) return;
     async function getPageData() {
@@ -287,10 +316,11 @@ export default function DynamicPage() {
     getPageData();
   }, [slug]);
 
+  // 2. Scroll Spy Logic
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 200; 
-      let currentId = activeSectionId;
+      // Offset for header height
+      const scrollPosition = window.scrollY + 250; 
       
       if(page?.sections) {
         for (const section of page.sections) {
@@ -298,93 +328,138 @@ export default function DynamicPage() {
           if (element) {
             const { offsetTop, offsetHeight } = element;
             if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
-              currentId = section.id;
+              setActiveSectionId(section.id);
               break;
             }
           }
         }
       }
-      if (currentId !== activeSectionId) setActiveSectionId(currentId);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [page, activeSectionId]);
+  }, [page]);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
-      const yOffset = -140; 
+      const yOffset = -150; // Adjusted offset for sticky headers
       const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
   };
 
+  // 3. Loading State
   if (loading) return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center">
-      <div className="w-16 h-16 border-4 border-blue-100 border-t-brand-primary rounded-full animate-spin mb-4"></div>
-      <p className="text-gray-400 animate-pulse">Loading content...</p>
+    <div className="h-screen bg-slate-50 flex flex-col items-center justify-center">
+      <div className="w-12 h-12 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+      <p className="font-mono text-xs text-slate-400 uppercase tracking-widest animate-pulse">Retrieving Data...</p>
     </div>
   );
 
-  if (!page) return <div className="text-center py-20 text-gray-500">Page not found.</div>;
+  if (!page) return (
+    <div className="h-screen flex flex-col items-center justify-center bg-slate-50">
+        <h1 className="font-display text-2xl font-bold text-slate-900 mb-2">404 - Page Not Found</h1>
+        <p className="text-slate-500">The requested content does not exist.</p>
+    </div>
+  );
 
   return (
     <div className="bg-white min-h-screen">
-      <div className="bg-brand-secondary text-white py-16 md:py-24 relative overflow-hidden">
-         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-         <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-brand-primary/50 rounded-full blur-3xl"></div>
-         <div className="container mx-auto px-4 relative z-10">
-            <motion.h1 
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              className="text-4xl md:text-6xl text-white font-bold tracking-tight mb-4"
+      
+      {/* HERO SECTION */}
+      <div className="bg-slate-950 text-white py-20 md:py-32 relative overflow-hidden">
+         {/* Technical Background */}
+         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05]"></div>
+         <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+         <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-transparent to-transparent"></div>
+         
+         <div className="container mx-auto px-6 relative z-10 max-w-7xl">
+            <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.6 }}
             >
-              {page.title}
-            </motion.h1>
-            <div className="h-1 w-20 bg-brand-bright rounded-full"></div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 mb-6 border border-white/10 bg-white/5 rounded-full backdrop-blur-sm">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                    <span className="font-mono text-[10px] font-bold text-blue-200 uppercase tracking-widest">Technical Overview</span>
+                </div>
+                
+                <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-6">
+                {page.title}
+                </h1>
+                
+                <div className="h-1 w-24 bg-blue-600 rounded-full"></div>
+            </motion.div>
          </div>
       </div>
 
-      <div className="container mx-auto px-4 py-12 flex flex-col lg:flex-row gap-16">
+      <div className="container mx-auto px-6 py-16 flex flex-col lg:flex-row gap-16 max-w-7xl">
         
-        <aside className="hidden lg:block w-64 shrink-0">
-          <div className="sticky top-32">
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 shadow-sm">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
-                 On This Page
+        {/* SIDEBAR NAVIGATION (Sticky) */}
+        <aside className="hidden lg:block w-72 shrink-0">
+          <div className="sticky top-[100px]">
+            <div className="bg-white rounded-sm border border-slate-200 shadow-xl shadow-slate-200/50 p-6">
+              <h3 className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                 <LayoutGrid size={12} /> Contents
               </h3>
-              <nav className="space-y-1 relative">
-                <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-gray-200 rounded-full" />
+              
+              <nav className="relative">
+                {/* Vertical Line */}
+                <div className="absolute left-[11px] top-2 bottom-2 w-px bg-slate-100" />
                 
-                {page.sections.map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => scrollToSection(section.id)}
-                    className={cn(
-                      "relative w-full text-left py-2 pl-6 pr-2 text-sm font-medium transition-all duration-300 rounded-md",
-                      activeSectionId === section.id 
-                        ? "text-brand-primary font-bold bg-white shadow-sm" 
-                        : "text-gray-500 hover:text-brand-secondary hover:pl-7"
-                    )}
-                  >
-                    {activeSectionId === section.id && (
-                      <motion.div
-                        layoutId="sidebar-indicator"
-                        className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-brand-primary rounded-full ring-2 ring-blue-100"
-                      />
-                    )}
-                    {section.title}
-                  </button>
-                ))}
+                <ul className="space-y-4">
+                    {page.sections.map((section, idx) => (
+                    <li key={section.id} className="relative z-10">
+                        <button
+                            onClick={() => scrollToSection(section.id)}
+                            className={cn(
+                            "group flex items-start gap-3 w-full text-left transition-all duration-200",
+                            activeSectionId === section.id ? "opacity-100" : "opacity-60 hover:opacity-100"
+                            )}
+                        >
+                            <span className={cn(
+                                "flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold border shrink-0 transition-all duration-300 bg-white",
+                                activeSectionId === section.id 
+                                ? "border-blue-600 text-blue-600 scale-110 shadow-sm" 
+                                : "border-slate-300 text-slate-400 group-hover:border-slate-400"
+                            )}>
+                                {idx + 1}
+                            </span>
+                            <span className={cn(
+                                "text-sm font-medium pt-0.5 transition-colors",
+                                activeSectionId === section.id ? "text-blue-700 font-bold" : "text-slate-600"
+                            )}>
+                                {section.title}
+                            </span>
+                        </button>
+                    </li>
+                    ))}
+                </ul>
               </nav>
+
+              <div className="mt-8 pt-6 border-t border-slate-100">
+                 <p className="font-sans text-xs text-slate-400 leading-relaxed">
+                    Need technical assistance with {page.title}?
+                 </p>
+                 <a href="/contact-us" className="inline-flex items-center gap-2 mt-3 text-xs font-bold text-blue-700 uppercase tracking-wider hover:underline">
+                    Contact Engineering <ArrowRight size={12} />
+                 </a>
+              </div>
             </div>
           </div>
         </aside>
 
+        {/* MAIN CONTENT AREA */}
         <main className="flex-1 min-w-0">
-          {page.sections.map((section, index) => (
-            <RootSection key={section.id} section={section} index={index} />
-          ))}
+          {page.sections.length > 0 ? (
+             page.sections.map((section, index) => (
+                <RootSection key={section.id} section={section} index={index} />
+             ))
+          ) : (
+             <div className="p-12 bg-slate-50 rounded-sm border border-slate-200 text-center text-slate-500">
+                No content sections available.
+             </div>
+          )}
         </main>
 
       </div>

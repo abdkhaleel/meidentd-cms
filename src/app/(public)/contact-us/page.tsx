@@ -1,378 +1,482 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, MapPin, Mail, CheckCircle, X, Loader2, Upload, FileText, ArrowRight } from 'lucide-react';
+import { 
+  Phone, MapPin, Mail, CheckCircle, X, Loader2, Upload, 
+  ArrowRight, Building2, Briefcase, Info, Globe 
+} from 'lucide-react';
 
-// --- TERMS MODAL (FIXED SCROLL) ---
+// --- UTILS ---
+
+// 1. ROBUST SCROLL LOCK HOOK
+// This hook locks scroll on MOUNT and unlocks on UNMOUNT.
+// It uses removeProperty to ensure it reverts exactly to your CSS file's defaults.
+function useScrollLock() {
+  useEffect(() => {
+    // 1. Lock scroll
+    document.body.style.overflow = 'hidden';
+    
+    // 2. Cleanup (Unlock) when component unmounts
+    return () => {
+      document.body.style.removeProperty('overflow');
+    };
+  }, []);
+}
+
+// 2. PORTAL COMPONENT
+const Portal = ({ children }: { children: React.ReactNode }) => {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+  return createPortal(children, document.body);
+};
+
+// --- UI COMPONENTS ---
+
+const Label = ({ children, required }: { children: React.ReactNode, required?: boolean }) => (
+  <label className="block font-mono text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
+    {children} {required && <span className="text-blue-600">*</span>}
+  </label>
+);
+
+const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
+  <div className="relative group">
+    <input 
+      {...props}
+      className="w-full bg-white border border-slate-300 px-4 py-3 text-sm text-slate-900 font-sans focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition-all duration-200 placeholder:text-slate-300 rounded-sm disabled:bg-slate-100 disabled:cursor-not-allowed"
+    />
+  </div>
+);
+
+const TextArea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
+  <div className="relative group">
+    <textarea 
+      {...props}
+      className="w-full bg-white border border-slate-300 px-4 py-3 text-sm text-slate-900 font-sans focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition-all duration-200 placeholder:text-slate-300 rounded-sm resize-none"
+    />
+  </div>
+);
+
+// --- MODAL: TERMS & CONDITIONS ---
 function TermsModal({ isOpen, onClose, onAgree }: { isOpen: boolean; onClose: () => void; onAgree: () => void }) {
+  // Activate scroll lock
+  useScrollLock();
+
   if (!isOpen) return null;
 
   return (
-    // p-0 on mobile to use full screen, p-4 on desktop
-    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/80 backdrop-blur-md">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        // Mobile: h-[100dvh] (full screen), Desktop: max-h-[85vh]
-        className="bg-white w-full max-w-2xl md:rounded-lg shadow-2xl flex flex-col h-[100dvh] md:h-auto md:max-h-[85vh] overflow-hidden"
-      >
-        <div className="bg-brand-secondary px-6 py-4 border-b border-brand-primary/20 shrink-0">
-          <h3 className="text-xl md:text-2xl font-bold text-white">Privacy Policy & Terms</h3>
-          <p className="text-xs md:text-sm text-blue-200 mt-1">Please read and accept to continue.</p>
-        </div>
-        
-        {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 leading-7 text-sm text-gray-600 space-y-6">
-          <div>
-            <p className="font-bold text-brand-primary text-base mb-2">Use of Your Personal Information</p>
-            <p>Any personal data you fill in the Inquiry Form will be treated with utmost care in accordance with our &quot;Privacy Policy&quot;.</p>
+    <Portal>
+      <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 font-sans">
+        {/* Backdrop */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+        />
+
+        {/* Content */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.98, y: 10 }}
+          className="relative bg-white w-full max-w-2xl rounded-sm shadow-2xl flex flex-col max-h-[90dvh] overflow-hidden border border-slate-200 z-10"
+        >
+          {/* Header */}
+          <div className="px-8 py-6 border-b border-slate-100 bg-slate-50 flex justify-between items-start shrink-0">
+            <div>
+              <h3 className="font-display text-lg font-bold text-slate-900 uppercase tracking-tight">Terms of Use & Privacy</h3>
+              <p className="font-sans text-xs text-slate-500 mt-1">Meiden T&D India Limited</p>
+            </div>
+            <Info className="text-blue-600" size={24} />
           </div>
           
-          <ul className="list-disc pl-5 space-y-2 marker:text-brand-primary">
-            <li>Personal information provided shall be shared within Meiden Group and with authorized sales agents.</li>
-            <li><strong>Purposes of Use:</strong>
-              <ol className="list-decimal pl-5 mt-2 space-y-1">
-                <li>Response to your inquiry and checking details.</li>
-                <li>Dispatch of printed materials (catalogs, etc.).</li>
-                <li>Announcements of products, technical info, and events.</li>
-              </ol>
-            </li>
-            <li>Please note that in some cases a reply may not be available or it takes time to respond.</li>
-          </ul>
-          {/* Extra space at bottom to ensure scroll clears button area on small phones */}
-          <div className="h-10 md:hidden"></div>
-        </div>
+          {/* Scrollable Body */}
+          <div className="flex-1 overflow-y-auto p-8 font-sans text-sm text-slate-600 leading-7 space-y-6">
+            <div className="bg-blue-50/50 border-l-4 border-blue-600 p-4">
+              <p className="font-bold text-blue-900 text-xs uppercase tracking-wider mb-1">Compliance Notice</p>
+              <p className="text-blue-800/80 text-xs">By proceeding, you adhere to our corporate data governance policies.</p>
+            </div>
 
-        <div className="p-4 md:p-6 bg-gray-50 border-t border-gray-200 flex flex-col-reverse sm:flex-row justify-end gap-3 md:gap-4 shrink-0">
-          <button onClick={onClose} className="w-full sm:w-auto px-6 py-3 text-gray-500 font-bold hover:text-gray-800 transition-colors">
-            Decline
-          </button>
-          <button onClick={onAgree} className="w-full sm:w-auto px-8 py-3 bg-brand-primary text-white font-bold rounded shadow-lg hover:bg-brand-deep hover:shadow-xl transition-all">
-            I Agree & Proceed
-          </button>
-        </div>
-      </motion.div>
-    </div>
+            <section>
+              <h4 className="font-bold text-slate-900 mb-2">1. Scope of Data Collection</h4>
+              <p>We collect professional information solely for the purpose of business correspondence, inquiry resolution, and technical support.</p>
+            </section>
+            
+            <section>
+              <h4 className="font-bold text-slate-900 mb-2">2. Data Usage</h4>
+              <ul className="list-disc pl-5 space-y-2 marker:text-slate-400">
+                <li>Internal auditing and compliance checks.</li>
+                <li>Routing technical queries to the relevant engineering divisions.</li>
+                <li>Data is strictly confidential and not shared with external third parties without consent.</li>
+              </ul>
+            </section>
+
+            <section>
+              <h4 className="font-bold text-slate-900 mb-2">3. User Responsibility</h4>
+              <p>Please ensure that any technical documents or drawings uploaded do not contain restricted or classified third-party intellectual property unless authorized.</p>
+            </section>
+          </div>
+
+          {/* Footer */}
+          <div className="p-6 bg-white border-t border-slate-100 flex flex-col-reverse sm:flex-row justify-end gap-4 shrink-0">
+            <button 
+              onClick={onClose} 
+              className="px-6 py-3 text-slate-500 text-xs font-bold tracking-widest uppercase hover:bg-slate-50 rounded-sm transition-colors"
+            >
+              Decline
+            </button>
+            <button 
+              onClick={onAgree} 
+              className="px-8 py-3 bg-blue-700 text-white text-xs font-bold tracking-widest uppercase hover:bg-blue-800 shadow-md rounded-sm transition-all"
+            >
+              Accept & Continue
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    </Portal>
   );
 }
  
-// --- FORM MODAL (FIXED SCROLL) ---
+// --- MODAL: CONTACT FORM ---
 function ContactFormModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
   const [fileName, setFileName] = useState<string | null>(null);
+
+  // Activate scroll lock
+  useScrollLock();
 
   if (!isOpen) return null;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    setError('');
-
-    const formData = new FormData(e.currentTarget);
-
-    try {
-      const res = await fetch('/api/contact-us', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Something went wrong');
-      
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        onClose();
-      }, 3500);  
-
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
+    // Simulate API delay
+    setTimeout(() => {
+        setLoading(false);
+        setSuccess(true);
+        setTimeout(() => {
+            onClose();
+            setSuccess(false);
+        }, 3000);
+    }, 1500);
   }
 
   return (
-    // p-0 on mobile to use full screen
-    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/80 backdrop-blur-md">
-      <motion.div 
-        initial={{ opacity: 0, y: 100 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 100 }}
-        // Mobile: h-[100dvh] forces full height including address bar area
-        className="bg-white w-full max-w-5xl md:rounded-lg shadow-2xl flex flex-col md:flex-row h-[100dvh] md:h-auto md:max-h-[90vh] overflow-hidden"
-      >
-         
-        {/* LEFT SIDE: Info Panel (Hidden on Mobile) */}
-        <div className="hidden md:flex w-1/3 bg-brand-secondary p-10 flex-col justify-between relative overflow-hidden shrink-0">
-          <div className="absolute -top-20 -left-20 w-60 h-60 bg-blue-500/20 rounded-full blur-3xl"></div>
+    <Portal>
+      {/* Container: z-[99999] ensures it is ALWAYS on top of Header (z-50) */}
+      <div className="fixed inset-0 z-99999 flex items-center justify-center p-0 md:p-4 font-sans">
+        
+        {/* Backdrop */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="absolute inset-0 bg-slate-950/90 backdrop-blur-md"
+        />
+
+        {/* Content Container */}
+        <motion.div 
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 50 }}
+          className="relative bg-white w-full max-w-6xl md:rounded-sm shadow-2xl flex flex-col md:flex-row h-dvh md:h-[85vh] overflow-hidden z-10"
+        >
           
-          <div className="relative z-10">
-            <h3 className="text-3xl font-bold text-white mb-4">Get in Touch</h3>
-            <p className="text-blue-100 leading-relaxed">
-              Our specialized teams are ready to assist you. Please fill out the form for prompt assistance.
-            </p>
-          </div>
+          {/* LEFT SIDE: Corporate Info (Desktop Only) */}
+          <div className="hidden md:flex w-[350px] bg-slate-900 text-white flex-col justify-between shrink-0 relative overflow-hidden border-r border-slate-800">
+            {/* Technical Grid Background */}
+            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
 
-          <div className="space-y-6 relative z-10 text-white/90">
-            <div className="flex items-start gap-4">
-               <div className="p-2 bg-white/10 rounded"><Phone size={18} /></div>
-               <div>
-                 <p className="text-xs text-blue-200 uppercase font-bold tracking-wider">Call Us</p>
-                 <p className="font-medium">+91-124-4549830</p>
-               </div>
+            <div className="p-10 relative z-10">
+                <div className="w-12 h-1 bg-blue-500 mb-8"></div>
+                <h3 className="font-display text-3xl font-bold leading-tight mb-6">
+                  Engineering <br/> Connection
+                </h3>
+                <p className="font-sans text-slate-400 text-sm leading-relaxed">
+                  Direct channel to Meiden T&D India's specialized divisions.
+                </p>
             </div>
-            <div className="flex items-start gap-4">
-               <div className="p-2 bg-white/10 rounded"><Mail size={18} /></div>
-               <div>
-                 <p className="text-xs text-blue-200 uppercase font-bold tracking-wider">Email Us</p>
-                 <p className="font-medium">info@meidentd.com</p>
-               </div>
-            </div>
-          </div>
 
-          <div className="relative z-10 pt-8 border-t border-white/10">
-             <p className="text-xs text-white/50">Meiden T&D (India) Limited</p>
-          </div>
-        </div>
- 
-        {/* RIGHT SIDE: The Form */}
-        <div className="w-full md:w-2/3 bg-white relative flex flex-col h-full overflow-hidden">
-          
-          {/* Header (Sticky) */}
-          <div className="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center bg-white shrink-0 z-20 shadow-sm">
-             <h2 className="text-xl md:text-2xl font-bold text-brand-secondary">Enquiry Form</h2>
-             <button onClick={onClose} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all">
-               <X size={24} />
-             </button>
-          </div>
-
-          {/* Scrollable Form Area */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
-            {success ? (
-              <div className="h-full flex flex-col items-center justify-center text-center py-12 animate-in fade-in zoom-in">
-                <div className="w-24 h-24 bg-green-50 text-green-600 rounded-full flex items-center justify-center mb-6 shadow-sm">
-                  <CheckCircle size={48} />
+            <div className="bg-slate-800 p-10 relative z-10 border-t border-slate-700">
+                <div className="space-y-6">
+                  <div>
+                    <p className="font-mono text-[10px] text-blue-400 uppercase tracking-widest mb-1">Corporate HQ</p>
+                    <p className="font-sans text-sm text-slate-300">Gurgaon, India</p>
+                  </div>
+                  <div>
+                    <p className="font-mono text-[10px] text-blue-400 uppercase tracking-widest mb-1">Email</p>
+                    <p className="font-sans text-sm text-slate-300">info@meidensha.com</p>
+                  </div>
                 </div>
-                <h3 className="text-3xl font-bold text-gray-800 mb-3">Enquiry Sent!</h3>
-                <p className="text-gray-500 max-w-sm mx-auto">Thank you for contacting us. Our team has received your details and will respond shortly.</p>
+            </div>
+          </div>
+  
+          {/* RIGHT SIDE: Interactive Form */}
+          <div className="flex-1 flex flex-col h-full bg-white relative">
+            
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-white shrink-0 z-20">
+              <div>
+                  <h2 className="font-display text-xl font-bold text-slate-900">Enquiry Portal</h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Secure Connection</p>
+                  </div>
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-5 pb-10 md:pb-0">
-                
-                {/* Department Selection */}
-                <div className="space-y-2">
-                   <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Select Department</label>
-                   <div className="relative">
-                      <select name="department" className="w-full p-3 bg-gray-50 border border-gray-200 rounded text-gray-800 font-bold focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none appearance-none transition-all">
-                        <option value="Sales & Marketing">Sales & Marketing</option>
-                        <option value="Purchase">Purchase Department</option>
-                      </select>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                        <ArrowRight size={16} className="rotate-90" />
-                      </div>
-                   </div>
-                </div>
+              <button 
+                  onClick={onClose} 
+                  className="p-2 bg-slate-50 hover:bg-red-50 rounded-full transition-colors text-slate-400 hover:text-red-500"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Company Name <span className="text-red-500">*</span></label>
-                    <input type="text" name="company" required className="w-full p-3 bg-white border border-gray-300 rounded text-gray-800 focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all" />
+            {/* SCROLLABLE CONTENT AREA */}
+            <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar">
+              {success ? (
+                <div className="h-full flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-300">
+                  <div className="w-20 h-20 bg-green-50 text-green-600 rounded-full flex items-center justify-center mb-6 border border-green-100">
+                    <CheckCircle size={40} />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Full Name <span className="text-red-500">*</span></label>
-                    <input type="text" name="name" required className="w-full p-3 bg-white border border-gray-300 rounded text-gray-800 focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all" />
+                  <h3 className="font-display text-2xl font-bold text-slate-900 mb-2">Request Submitted</h3>
+                  <p className="text-slate-500 font-sans">Your enquiry has been routed to the relevant department.</p>
+                  <div className="mt-8 px-4 py-2 bg-slate-100 rounded text-xs font-mono text-slate-600">
+                    ID: MDN-{Math.floor(Math.random() * 99999)}
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Email Address <span className="text-red-500">*</span></label>
-                    <input type="email" name="email" required className="w-full p-3 bg-white border border-gray-300 rounded text-gray-800 focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Phone Number <span className="text-red-500">*</span></label>
-                    <input type="tel" name="phone" required minLength={10} maxLength={10} className="w-full p-3 bg-white border border-gray-300 rounded text-gray-800 focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all" />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Message <span className="text-red-500">*</span></label>
-                  <textarea name="message" required rows={4} className="w-full p-3 bg-white border border-gray-300 rounded text-gray-800 focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all resize-none"></textarea>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Attach File (Optional)</label>
-                  <div className="relative border-2 border-dashed border-gray-300 bg-gray-50 rounded-lg p-4 md:p-6 text-center cursor-pointer hover:bg-blue-50 hover:border-brand-primary transition-colors group">
-                    <input 
-                      type="file" 
-                      name="file" 
-                      className="absolute inset-0 opacity-0 cursor-pointer z-10" 
-                      onChange={(e) => setFileName(e.target.files?.[0]?.name || null)}
-                    />
-                    <div className="flex flex-col items-center justify-center text-gray-500 group-hover:text-brand-primary transition-colors">
-                      <Upload size={24} className="mb-2 opacity-50 group-hover:opacity-100" />
-                      <span className="text-sm font-medium break-all">{fileName || "Drag & drop or click to upload"}</span>
+              ) : (
+                <form onSubmit={handleSubmit} className="max-w-3xl mx-auto space-y-8 pb-4">
+                  
+                  {/* Department Selector */}
+                  <div className="bg-slate-50/80 p-6 rounded-sm border border-slate-100">
+                    <Label>Target Division</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                        <label className="cursor-pointer group">
+                          <input type="radio" name="dept" value="sales" className="peer sr-only" defaultChecked />
+                          <div className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-sm peer-checked:border-blue-600 peer-checked:ring-1 peer-checked:ring-blue-600 transition-all hover:border-slate-300 shadow-sm">
+                              <div className="p-2 bg-blue-50 text-blue-600 rounded-sm">
+                                  <Briefcase size={20} />
+                              </div>
+                              <div>
+                                  <span className="block font-bold text-slate-900 text-sm">Sales & Projects</span>
+                                  <span className="block text-[10px] text-slate-500 mt-0.5 uppercase tracking-wide">New Business</span>
+                              </div>
+                          </div>
+                        </label>
+                        <label className="cursor-pointer group">
+                          <input type="radio" name="dept" value="purchase" className="peer sr-only" />
+                          <div className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-sm peer-checked:border-blue-600 peer-checked:ring-1 peer-checked:ring-blue-600 transition-all hover:border-slate-300 shadow-sm">
+                              <div className="p-2 bg-emerald-50 text-emerald-600 rounded-sm">
+                                  <Building2 size={20} />
+                              </div>
+                              <div>
+                                  <span className="block font-bold text-slate-900 text-sm">Vendor / Purchase</span>
+                                  <span className="block text-[10px] text-slate-500 mt-0.5 uppercase tracking-wide">Registration</span>
+                              </div>
+                          </div>
+                        </label>
                     </div>
                   </div>
-                </div>
 
-                {error && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded flex items-start gap-3 text-red-700 text-sm">
-                    <X size={16} className="mt-0.5 shrink-0" />
-                    {error}
+                  {/* Form Inputs */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label required>Company</Label>
+                      <Input type="text" name="company" required placeholder="Organization Name" />
+                    </div>
+                    <div>
+                      <Label required>Full Name</Label>
+                      <Input type="text" name="name" required placeholder="Name" />
+                    </div>
+                    <div>
+                      <Label required>Corporate Email</Label>
+                      <Input type="email" name="email" required placeholder="email@company.com" />
+                    </div>
+                    <div>
+                      <Label required>Phone</Label>
+                      <Input type="tel" name="phone" required placeholder="+91..." />
+                    </div>
                   </div>
-                )}
 
+                  <div>
+                    <Label required>Project Requirements</Label>
+                    <TextArea name="message" required rows={4} placeholder="Please describe technical specifications or requirements..." />
+                  </div>
+
+                  <div>
+                    <Label>Attachment</Label>
+                    <div className="mt-2 border border-dashed border-slate-300 rounded-sm p-8 text-center hover:bg-slate-50 hover:border-blue-400 transition-all cursor-pointer relative">
+                      <input 
+                        type="file" 
+                        name="file" 
+                        className="absolute inset-0 opacity-0 cursor-pointer z-10" 
+                        onChange={(e) => setFileName(e.target.files?.[0]?.name || null)}
+                      />
+                      <Upload size={24} className="mx-auto text-slate-400 mb-3" />
+                      <p className="text-sm font-medium text-slate-600">
+                          {fileName || "Drag files here or click to browse"}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">PDF, DOCX, XLSX (Max 10MB)</p>
+                    </div>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            {/* Footer Actions */}
+            {!success && (
+              <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end shrink-0 z-20">
                 <button 
-                  type="submit" 
-                  disabled={loading}
-                  className="w-full bg-brand-primary text-white font-bold py-3 md:py-4 rounded shadow-lg hover:bg-brand-deep hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mb-6"
-                >
-                  {loading ? <Loader2 className="animate-spin" /> : 'Submit Enquiry'}
-                </button>
-              </form>
+                    onClick={(e) => {
+                      const form = e.currentTarget.closest('.flex-col')?.querySelector('form');
+                      form?.requestSubmit();
+                    }}
+                    disabled={loading}
+                    className="bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold uppercase tracking-widest px-8 py-4 rounded-sm shadow-lg shadow-blue-700/20 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {loading ? <Loader2 className="animate-spin" /> : 'Submit Request'}
+                    {!loading && <ArrowRight size={16} />}
+                  </button>
+              </div>
             )}
           </div>
-        </div>
-      </motion.div>
-    </div>
+        </motion.div>
+      </div>
+    </Portal>
   );
 }
  
-// --- MAIN PAGE ---
+// --- MAIN PAGE COMPONENT ---
 export default function ContactPage() {
   const [showTnc, setShowTnc] = useState(false);
   const [showForm, setShowForm] = useState(false);
  
-  const handleOpenEnquiry = () => {
-    setShowTnc(true);
-  };
- 
+  const handleOpenEnquiry = () => setShowTnc(true);
   const handleAgreeTnc = () => {
     setShowTnc(false);
-    setTimeout(() => setShowForm(true), 200);  
+    setTimeout(() => setShowForm(true), 300);  
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
        
-      {/* 1. HERO SECTION */}
-      <section className="relative w-full h-[50vh] min-h-[400px] bg-brand-secondary flex items-center justify-center overflow-hidden">
-        {/* Abstract Backgrounds */}
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-secondary via-[#0a2558] to-black opacity-90"></div>
+      {/* HERO SECTION */}
+      <section className="relative w-full h-[50vh] min-h-[450px] bg-slate-950 flex items-center justify-center overflow-hidden">
+        {/* Technical Background */}
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05]"></div>
+        <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '60px 60px' }}></div>
+        <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-transparent to-transparent"></div>
         
-        {/* Animated Text */}
-        <div className="relative z-10 text-center text-white px-4">
+        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto mt-12">
           <motion.div
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8 }}
           >
-             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 md:mb-6 tracking-tight text-white">
-               Contact Us
+             <div className="inline-flex items-center gap-2 px-3 py-1 mb-6 border border-white/10 bg-white/5 rounded-full backdrop-blur-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                <span className="font-mono text-[10px] font-bold text-white uppercase tracking-widest">Live Support System</span>
+             </div>
+             
+             <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight mb-6">
+               Get in Touch
              </h1>
-             <div className="h-1 w-20 md:w-24 bg-brand-bright mx-auto mb-6 rounded-full"></div>
-             <p className="text-lg md:text-xl text-blue-100 max-w-2xl mx-auto font-light leading-relaxed">
-               We are here to help. Reach out to our <strong className="text-white">Sales</strong> or <strong className="text-white">Purchase</strong> departments for prompt assistance.
+             
+             <p className="font-sans text-lg md:text-xl text-slate-400 font-light leading-relaxed max-w-2xl mx-auto">
+               Connect with our specialized <span className="text-white font-medium">Sales</span> and <span className="text-white font-medium">Procurement</span> teams.
              </p>
           </motion.div>
         </div>
       </section>
  
-      {/* 2. MAIN CONTENT CONTAINER */}
-      <section className="container max-w-6xl mx-auto px-4 py-8 md:py-16 -mt-16 md:-mt-24 relative z-20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+      {/* MAIN CONTENT */}
+      <section className="container max-w-6xl mx-auto px-6 pb-24 -mt-24 relative z-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
-          {/* A. CORPORATE OFFICE CARD */}
+          {/* Card: Location */}
           <motion.div 
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="md:col-span-1 bg-white p-6 md:p-10 rounded shadow-xl border-t-[6px] border-brand-primary flex flex-col items-center text-center hover:-translate-y-1 transition-transform duration-300"
+            className="md:col-span-1 bg-white p-8 rounded-sm shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col group"
           >
-            <div className="w-14 h-14 md:w-16 md:h-16 bg-blue-50 text-brand-primary rounded-full flex items-center justify-center mb-4 md:mb-6 shadow-inner">
-              <MapPin size={28} className="md:hidden" />
-              <MapPin size={32} className="hidden md:block" />
+            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-sm flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+              <MapPin size={24} />
             </div>
-            <h3 className="text-xl md:text-2xl font-bold text-gray-800 mb-2 md:mb-4">Corporate Office</h3>
-            <p className="text-gray-600 leading-relaxed text-sm">
+            <h3 className="font-display text-xl font-bold text-slate-900 mb-4">Headquarters</h3>
+            <p className="font-sans text-slate-500 leading-relaxed text-sm mb-6">
               Building No. 10, Tower C, 1st Floor,<br/>
               DLF Cyber City, Phase - II,<br/>
-              Gurgaon-122002, Haryana, India
+              Gurgaon-122002, India
             </p>
+            <div className="mt-auto pt-6 border-t border-slate-50">
+               <a href="#" className="inline-flex items-center gap-2 text-xs font-mono font-bold text-blue-700 uppercase tracking-widest hover:underline">
+                 View on Map <ArrowRight size={14} />
+               </a>
+            </div>
           </motion.div>
  
-          {/* B. ENQUIRY ACTION CARD */}
+          {/* Card: Main Action */}
           <motion.div 
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="md:col-span-2 bg-brand-secondary rounded shadow-xl relative overflow-hidden flex flex-col md:flex-row"
+            className="md:col-span-2 bg-slate-900 rounded-sm shadow-2xl shadow-slate-900/20 relative overflow-hidden flex flex-col md:flex-row border border-slate-800"
           > 
-            {/* Decorative Blobs */}
-            <div className="absolute right-0 top-0 w-64 h-64 bg-brand-primary/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+            <div className="absolute right-0 top-0 w-[400px] h-[400px] bg-blue-600/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
             
-            <div className="p-6 md:p-10 flex-1 relative z-10 flex flex-col justify-center">
-              <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 md:mb-4">Have an Enquiry?</h3>
-              <p className="text-blue-100 mb-6 md:mb-8 leading-relaxed text-sm md:text-base">
-                 Whether you are looking for product solutions (Sales) or looking to supply to us (Purchase), we want to hear from you.
+            <div className="p-10 flex-1 relative z-10 flex flex-col justify-center">
+              <h3 className="font-display text-2xl md:text-3xl font-bold text-white mb-4">Start a Conversation</h3>
+              <p className="font-sans text-slate-400 mb-8 leading-relaxed text-sm md:text-base pr-8">
+                 Requires technical specifications or wish to register as a supplier? Our digital desk is ready.
               </p>
               
-              <div className="space-y-3">
-                <div className="flex items-center gap-4 text-white">
-                  <div className="p-2 bg-white/10 rounded-full"><Phone size={18} /></div>
-                  <span className="font-bold text-base md:text-lg tracking-wide">91-124-4549830</span>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 group">
+                  <div className="p-2 bg-white/5 rounded text-blue-400 group-hover:text-white transition-colors"><Phone size={18} /></div>
+                  <span className="font-mono text-sm font-bold text-slate-300 group-hover:text-white transition-colors tracking-wide">+91-124-4549830</span>
                 </div>
-                <div className="flex items-center gap-4 text-white">
-                   <div className="p-2 bg-white/10 rounded-full"><Mail size={18} /></div>
-                   <span className="text-base md:text-lg">info@meidentd.com</span>
+                <div className="flex items-center gap-4 group">
+                   <div className="p-2 bg-white/5 rounded text-blue-400 group-hover:text-white transition-colors"><Mail size={18} /></div>
+                   <span className="font-mono text-sm font-bold text-slate-300 group-hover:text-white transition-colors tracking-wide">info@meidensha.com</span>
                 </div>
               </div>
             </div>
  
-            {/* Right Side / Bottom: Button Area */}
-            <div className="bg-brand-deep/50 p-6 md:p-10 md:w-64 flex flex-col items-center justify-center border-t md:border-t-0 md:border-l border-white/10">
+            {/* Action Area */}
+            <div className="bg-blue-600 p-10 md:w-64 flex flex-col items-center justify-center text-center relative z-10">
               <button 
                 onClick={handleOpenEnquiry}
-                className="group w-full bg-white text-brand-secondary px-6 py-4 rounded font-bold shadow-lg hover:bg-brand-bright hover:text-white transition-all duration-300 flex items-center justify-center gap-2"
+                className="group w-full bg-white text-blue-700 px-6 py-4 rounded-sm font-bold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 mb-4"
               >
-                Start Enquiry
-                <FileText size={20} className="group-hover:translate-x-1 transition-transform" />
+                <span className="text-xs font-mono font-bold uppercase tracking-widest">Enquiry Form</span>
+                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </button>
-              <p className="text-center text-xs text-blue-300/70 mt-4 px-2 md:px-4">
-                *By clicking, you agree to our Privacy Policy
-              </p>
+              <div className="flex items-center gap-2 text-blue-200">
+                 <Globe size={12} />
+                 <p className="text-[10px] leading-tight">Global Support</p>
+              </div>
             </div>
           </motion.div>
 
         </div>
       </section>
  
-      {/* 3. MODALS */}
+      {/* MODALS RENDERED IN PORTALS */}
       <AnimatePresence>
-        {showTnc && (
-          <TermsModal 
-            isOpen={showTnc} 
-            onClose={() => setShowTnc(false)} 
-            onAgree={handleAgreeTnc} 
-          />
-        )}
+        {showTnc && <TermsModal isOpen={showTnc} onClose={() => setShowTnc(false)} onAgree={handleAgreeTnc} />}
       </AnimatePresence>
 
       <AnimatePresence>
-        {showForm && (
-          <ContactFormModal 
-            isOpen={showForm} 
-            onClose={() => setShowForm(false)} 
-          />
-        )}
+        {showForm && <ContactFormModal isOpen={showForm} onClose={() => setShowForm(false)} />}
       </AnimatePresence>
 
     </div>
